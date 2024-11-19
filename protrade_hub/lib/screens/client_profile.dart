@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 
 class ClientProfilePage extends StatelessWidget {
+  const ClientProfilePage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Client Profile'),
+        title: const Text('Client Profile'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: const Padding(
+        padding: EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

@@ -9,11 +9,13 @@ class LoginPage extends StatelessWidget {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
+  LoginPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Trade Software Login'),
+        title: const Text('Trade Software Login'),
         centerTitle: true,
       ),
       body: Padding(
@@ -23,15 +25,15 @@ class LoginPage extends StatelessWidget {
           children: [
             TextField(
               controller: _emailController,
-              decoration: InputDecoration(labelText: 'Email'),
+              decoration: const InputDecoration(labelText: 'Email'),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             TextField(
               controller: _passwordController,
               obscureText: true,
-              decoration: InputDecoration(labelText: 'Password'),
+              decoration: const InputDecoration(labelText: 'Password'),
             ),
-            SizedBox(height: 32),
+            const SizedBox(height: 32),
             ElevatedButton(
               onPressed: () {
                 final email = _emailController.text;
@@ -40,35 +42,35 @@ class LoginPage extends StatelessWidget {
                 if (email == 'admin@demo.com' && password == 'admin') {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => AdminDashboard()),
+                    MaterialPageRoute(builder: (context) => const AdminDashboard()),
                   );
                 } else if (email == 'contractor@demo.com' && password == 'contractor') {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => ContractorProfilePage()),
+                    MaterialPageRoute(builder: (context) => const ContractorProfilePage()),
                   );
                 } else if (email == 'client@demo.com' && password == 'client') {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => ClientProfilePage()),
+                    MaterialPageRoute(builder: (context) => const ClientProfilePage()),
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Invalid login credentials')),
+                    const SnackBar(content: Text('Invalid login credentials')),
                   );
                 }
               },
-              child: Text('Login'),
+              child: const Text('Login'),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             TextButton(
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => SignUpPage()),
+                  MaterialPageRoute(builder: (context) => const SignUpPage()),
                 );
               },
-              child: Text('Sign Up as Contractor or User'),
+              child: const Text('Sign Up as Contractor or User'),
             ),
           ],
         ),
