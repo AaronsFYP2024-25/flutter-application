@@ -9,7 +9,9 @@ class SignUpPage extends StatefulWidget {
 
 class _SignUpPageState extends State<SignUpPage> {
   bool isClient = true; // Tracks whether "Client" or "Contractor" is selected
+  final _formKey = GlobalKey<FormState>(); // Key for form validation
 
+  // Controllers for form fields
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
@@ -75,22 +77,35 @@ class _SignUpPageState extends State<SignUpPage> {
             ),
             const SizedBox(height: 20),
 
-            // Dynamic Form
+            // Form with Validation
             Expanded(
               child: SingleChildScrollView(
-                child: isClient ? buildClientForm() : buildContractorForm(),
+                child: Form(
+                  key: _formKey,
+                  child: isClient ? buildClientForm() : buildContractorForm(),
+                ),
               ),
             ),
 
             // Submit Button
             ElevatedButton(
+              key: const Key('signUpButton'),
               onPressed: () {
-                if (isClient) {
-                  // Handle client sign-up logic
-                  print('Client Sign-Up: ${emailController.text}');
+                if (_formKey.currentState!.validate()) {
+                  // Form is valid
+                  if (isClient) {
+                    print('Client Sign-Up: ${emailController.text}');
+                  } else {
+                    print('Contractor Sign-Up: ${emailController.text}');
+                  }
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Form Submitted Successfully')),
+                  );
                 } else {
-                  // Handle contractor sign-up logic
-                  print('Contractor Sign-Up: ${emailController.text}');
+                  // Form is invalid
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please fill out all required fields')),
+                  );
                 }
               },
               child: const Text('Sign Up'),
@@ -105,10 +120,10 @@ class _SignUpPageState extends State<SignUpPage> {
   Widget buildClientForm() {
     return Column(
       children: [
-        buildTextField(controller: nameController, label: 'Name'),
-        buildTextField(controller: emailController, label: 'Email'),
-        buildTextField(controller: passwordController, label: 'Password', isPassword: true),
-        buildTextField(controller: phoneController, label: 'Phone Number'),
+        buildValidatedField(controller: nameController, label: 'Name'),
+        buildValidatedField(controller: emailController, label: 'Email', isEmail: true),
+        buildValidatedField(controller: passwordController, label: 'Password', isPassword: true),
+        buildValidatedField(controller: phoneController, label: 'Phone Number', isPhone: true),
       ],
     );
   }
@@ -117,33 +132,55 @@ class _SignUpPageState extends State<SignUpPage> {
   Widget buildContractorForm() {
     return Column(
       children: [
-        buildTextField(controller: nameController, label: 'Name'),
-        buildTextField(controller: companyController, label: 'Company Name'),
-        buildTextField(controller: emailController, label: 'Email'),
-        buildTextField(controller: passwordController, label: 'Password', isPassword: true),
-        buildTextField(controller: phoneController, label: 'Phone Number'),
-        buildTextField(controller: insuranceController, label: 'Insurance Number'),
-        buildTextField(controller: fieldXController, label: 'Field X'),
-        buildTextField(controller: fieldYController, label: 'Field Y'),
+        buildValidatedField(controller: nameController, label: 'Name'),
+        buildValidatedField(controller: companyController, label: 'Company Name'),
+        buildValidatedField(controller: emailController, label: 'Email', isEmail: true),
+        buildValidatedField(controller: passwordController, label: 'Password', isPassword: true),
+        buildValidatedField(controller: phoneController, label: 'Phone Number', isPhone: true),
+        buildValidatedField(controller: insuranceController, label: 'Insurance Number'),
+        buildValidatedField(controller: fieldXController, label: 'Field X'),
+        buildValidatedField(controller: fieldYController, label: 'Field Y'),
       ],
     );
   }
 
-  // Reusable Text Field
-  Widget buildTextField({
+  // Reusable Validated Text Field
+  Widget buildValidatedField({
     required TextEditingController controller,
     required String label,
     bool isPassword = false,
+    bool isEmail = false,
+    bool isPhone = false,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: TextField(
+      child: TextFormField(
         controller: controller,
         obscureText: isPassword,
+        keyboardType: isEmail
+            ? TextInputType.emailAddress
+            : isPhone
+                ? TextInputType.phone
+                : TextInputType.text,
         decoration: InputDecoration(
           labelText: label,
-          border: OutlineInputBorder(),
+          border: const OutlineInputBorder(),
         ),
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return '$label is required';
+          }
+          if (isEmail && !value.contains('@')) {
+            return 'Enter a valid email';
+          }
+          if (isPhone && value.length < 10) {
+            return 'Enter a valid phone number';
+          }
+          if (isPassword && value.length < 6) {
+            return 'Password must be at least 6 characters';
+          }
+          return null;
+        },
       ),
     );
   }
