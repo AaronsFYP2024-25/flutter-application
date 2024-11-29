@@ -1,7 +1,17 @@
 import 'package:flutter/material.dart';
 
-class ContractorProfilePage extends StatelessWidget {
+class ContractorProfilePage extends StatefulWidget {
   const ContractorProfilePage({super.key});
+
+  @override
+  _ContractorProfilePageState createState() => _ContractorProfilePageState();
+}
+
+class _ContractorProfilePageState extends State<ContractorProfilePage> {
+  List<String> specializations = [];
+  final TextEditingController specializationController = TextEditingController();
+
+  final List<String> jobTags = ["Plumber", "Electrician", "Carpenter", "Painter"];
 
   @override
   Widget build(BuildContext context) {
@@ -9,112 +19,76 @@ class ContractorProfilePage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Contractor Profile'),
       ),
-      body: SingleChildScrollView(
+      body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Profile Picture and Name Section
-            Center(
-              child: Column(
-                children: [
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundImage: AssetImage('assets/profile_placeholder.png'), // Replace with a valid image path
-                  ),
-                  const SizedBox(height: 10),
-                  const Text('John Doe', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                ],
-              ),
+            const Text(
+              'Your Specializations',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 20),
-
-            // Profile Details Section
-            const Text('Profile Details', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
-            Card(
-              elevation: 3,
-              child: ListTile(
-                leading: const Icon(Icons.email),
-                title: const Text('Email'),
-                subtitle: const Text('contractor@demo.com'),
-              ),
+            Wrap(
+              spacing: 8.0,
+              children: specializations
+                  .map((specialization) => Chip(
+                        key: Key('specialization-$specialization'), // Assign unique key
+                        label: Text(specialization),
+                        onDeleted: () {
+                          setState(() {
+                            specializations.remove(specialization);
+                          });
+                        },
+                        deleteIcon: const Icon(Icons.close), // Ensure the delete icon is set
+                      ))
+                  .toList(),
             ),
-            const SizedBox(height: 8),
-            Card(
-              elevation: 3,
-              child: ListTile(
-                leading: const Icon(Icons.phone),
-                title: const Text('Phone'),
-                subtitle: const Text('+1234567890'),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Card(
-              elevation: 3,
-              child: ListTile(
-                leading: const Icon(Icons.home),
-                title: const Text('Address'),
-                subtitle: const Text('123 Trade Lane, Cityville'),
+            const SizedBox(height: 20),
+            TextField(
+              key: const Key('specializationInput'), // Assign unique key
+              controller: specializationController,
+              decoration: InputDecoration(
+                labelText: 'Add Specialization',
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  key: const Key('addSpecializationButton'), // Assign unique key
+                  icon: const Icon(Icons.add),
+                  onPressed: () {
+                    final newSpecialization = specializationController.text.trim();
+                    if (newSpecialization.isNotEmpty &&
+                        !specializations.contains(newSpecialization)) {
+                      setState(() {
+                        specializations.add(newSpecialization);
+                      });
+                      specializationController.clear();
+                    }
+                  },
+                ),
               ),
             ),
             const SizedBox(height: 20),
-
-            // Buttons Section
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Edit Profile Coming Soon')),
-                    );
-                  },
-                  child: const Text('Edit Profile'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Logout Coming Soon')),
-                    );
-                  },
-                  child: const Text('Logout'),
-                ),
-              ],
+            const Text(
+              'Filtered Jobs',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 20),
-
-            // Navigation Section
-            const Text('Quick Actions', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
-            Card(
-              elevation: 3,
-              child: ListTile(
-                leading: const Icon(Icons.dashboard),
-                title: const Text('Go to Dashboard'),
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Dashboard Coming Soon')),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 8),
-            Card(
-              elevation: 3,
-              child: ListTile(
-                leading: const Icon(Icons.work),
-                title: const Text('Manage Jobs'),
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Job Management Coming Soon')),
-                  );
-                },
+            Expanded(
+              child: ListView(
+                children: jobTags
+                    .where((job) => specializations.any((tag) => job.contains(tag)))
+                    .map((job) => Card(
+                          key: Key('job-$job'), // Assign unique key
+                          child: ListTile(
+                            title: Text(job),
+                          ),
+                        ))
+                    .toList(),
               ),
             ),
           ],
         ),
       ),
     );
-  } //end of build
-} //end of ContractorProfilePage
+  }
+}
