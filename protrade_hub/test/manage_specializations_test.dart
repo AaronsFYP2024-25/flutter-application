@@ -1,30 +1,68 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:protrade_hub/widgets/manage_specializations_widget.dart'; // Update path as needed
+import 'package:protrade_hub/widgets/manage_specializations_widget.dart';
 
 void main() {
   group('ManageSpecializationsWidget Tests', () {
     testWidgets('Add a specialization', (WidgetTester tester) async {
-      // Wrap the widget with MaterialApp and Scaffold
+      final specializations = ['Plumber', 'Electrician'];
+
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: ManageSpecializationsWidget(),
+            body: ManageSpecializationsWidget(
+              specializations: specializations,
+              onSpecializationAdded: (specialization) {
+                if (!specializations.contains(specialization)) {
+                  specializations.add(specialization);
+                }
+              },
+              onSpecializationRemoved: (specialization) {
+                specializations.remove(specialization);
+              },
+            ),
           ),
         ),
       );
 
-      // Verify "Your Specializations" text is present
-      expect(find.text('Your Specializations'), findsOneWidget);
-
-      // Add a specialization
-      await tester.enterText(
-          find.byType(TextField).first, 'Plumber'); // Input "Plumber"
-      await tester.tap(find.byIcon(Icons.add)); // Press the add button
+      // Add a new specialization
+      await tester.enterText(find.byKey(const Key('specializationInput')), 'Carpenter');
+      await tester.tap(find.byKey(const Key('addSpecializationButton')));
       await tester.pumpAndSettle();
 
       // Verify the specialization appears as a chip
-      expect(find.text('Plumber'), findsOneWidget);
+      expect(find.text('Carpenter'), findsOneWidget);
+      expect(specializations, contains('Carpenter'));
+    });
+
+    testWidgets('Remove a specialization', (WidgetTester tester) async {
+      final specializations = ['Plumber', 'Electrician'];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ManageSpecializationsWidget(
+              specializations: specializations,
+              onSpecializationAdded: (specialization) {
+                if (!specializations.contains(specialization)) {
+                  specializations.add(specialization);
+                }
+              },
+              onSpecializationRemoved: (specialization) {
+                specializations.remove(specialization);
+              },
+            ),
+          ),
+        ),
+      );
+
+      // Remove a specialization
+      await tester.tap(find.byIcon(Icons.close).first);
+      await tester.pumpAndSettle();
+
+      // Verify the specialization is removed
+      expect(find.text('Plumber'), findsNothing);
+      expect(specializations, isNot(contains('Plumber')));
     });
   });
 }

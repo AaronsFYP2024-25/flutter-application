@@ -1,7 +1,19 @@
 import 'package:flutter/material.dart';
 
 class ManageAvailabilityWidget extends StatefulWidget {
-  const ManageAvailabilityWidget({super.key});
+  final Map<String, List<Map<String, String>>> availability;
+  final void Function(String day, Map<String, String> slot) onAvailabilityAdded;
+  final void Function(String day, Map<String, String> slot)
+      onAvailabilityRemoved;
+  final void Function(String day) onNewDayAdded;
+
+  const ManageAvailabilityWidget({
+    super.key,
+    required this.availability,
+    required this.onAvailabilityAdded,
+    required this.onAvailabilityRemoved,
+    required this.onNewDayAdded,
+  });
 
   @override
   _ManageAvailabilityWidgetState createState() =>
@@ -9,34 +21,24 @@ class ManageAvailabilityWidget extends StatefulWidget {
 }
 
 class _ManageAvailabilityWidgetState extends State<ManageAvailabilityWidget> {
-  final Map<String, List<Map<String, String>>> availability = {
-    "Monday": [],
-    "Tuesday": [],
-    "Wednesday": [],
-    "Thursday": [],
-    "Friday": [],
-    "Saturday": [],
-    "Sunday": [],
-  };
+  final TextEditingController _startTimeController = TextEditingController();
+  final TextEditingController _endTimeController = TextEditingController();
+  final TextEditingController _newDayController = TextEditingController();
+  String? _selectedDay;
 
-  String? selectedDay;
-  final TextEditingController startTimeController = TextEditingController();
-  final TextEditingController endTimeController = TextEditingController();
-
-  void addAvailability() {
-    if (selectedDay == null ||
-        startTimeController.text.isEmpty ||
-        endTimeController.text.isEmpty) {
+  void _addAvailability() {
+    if (_selectedDay == null ||
+        _startTimeController.text.isEmpty ||
+        _endTimeController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill all fields')),
       );
       return;
     }
 
-    final startTime = startTimeController.text;
-    final endTime = endTimeController.text;
+    final startTime = _startTimeController.text;
+    final endTime = _endTimeController.text;
 
-    // Validate time range
     if (startTime.compareTo(endTime) >= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('End time must be after start time')),
@@ -44,108 +46,164 @@ class _ManageAvailabilityWidgetState extends State<ManageAvailabilityWidget> {
       return;
     }
 
-    // Check for overlapping time slots
-    final dayAvailability = availability[selectedDay!]!;
-    for (var slot in dayAvailability) {
-      if ((startTime.compareTo(slot['end']!) < 0) &&
-          (endTime.compareTo(slot['start']!) > 0)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Time slots cannot overlap')),
-        );
-        return;
-      }
+    final newSlot = {'start': startTime, 'end': endTime};
+    widget.onAvailabilityAdded(_selectedDay!, newSlot);
+
+    _startTimeController.clear();
+    _endTimeController.clear();
+    setState(() {
+      _selectedDay = null;
+    });
+  }
+
+  void _addNewDay() {
+    final newDay = _newDayController.text.trim();
+    if (newDay.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid day')),
+      );
+      return;
     }
 
+    if (widget.availability.containsKey(newDay)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Day already exists')),
+      );
+      return;
+    }
+
+    widget.onNewDayAdded(newDay);
+    _newDayController.clear();
     setState(() {
-      availability[selectedDay!]!.add({'start': startTime, 'end': endTime});
+      _selectedDay = newDay;
     });
 
-    startTimeController.clear();
-    endTimeController.clear();
-    selectedDay = null;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$newDay has been added')),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Your Availability',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            DropdownButtonFormField<String>(
-              key: const Key('dayDropdown'),
-              value: selectedDay,
-              onChanged: (value) {
-                setState(() {
-                  selectedDay = value;
-                });
-              },
-              items: availability.keys
-                  .map((day) => DropdownMenuItem(
-                        value: day,
-                        child: Text(day),
-                      ))
-                  .toList(),
-              decoration: const InputDecoration(
-                labelText: 'Select Day',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              key: const Key('startTimeInput'),
-              controller: startTimeController,
-              decoration: const InputDecoration(
-                labelText: 'Start Time (HH:mm)',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.datetime,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              key: const Key('endTimeInput'),
-              controller: endTimeController,
-              decoration: const InputDecoration(
-                labelText: 'End Time (HH:mm)',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.datetime,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: addAvailability,
-              child: const Text('Add Time Slot'),
-            ),
-            const SizedBox(height: 20),
-            ...availability.entries.expand((entry) => [
-                  Text(
-                    entry.key,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Your Availability',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  value: _selectedDay,
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedDay = value;
+                    });
+                  },
+                  items: widget.availability.keys
+                      .map((day) => DropdownMenuItem(
+                            value: day,
+                            child: Text(day),
+                          ))
+                      .toList(),
+                  decoration: const InputDecoration(
+                    labelText: 'Select Day',
+                    border: OutlineInputBorder(),
                   ),
-                  ...entry.value.map((slot) => ListTile(
-                        title: Text('From ${slot['start']} to ${slot['end']}'),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete),
-                          onPressed: () {
-                            setState(() {
-                              entry.value.remove(slot);
-                            });
-                          },
+                ),
+              ),
+              const SizedBox(width: 10),
+              ElevatedButton(
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Add New Day'),
+                      content: TextField(
+                        controller: _newDayController,
+                        decoration: const InputDecoration(
+                          labelText: 'Enter Day',
+                          border: OutlineInputBorder(),
                         ),
-                      )),
-                  const Divider(),
-                ]),
-          ],
-        ),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          child: const Text('Cancel'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () {
+                            _addNewDay();
+                            Navigator.pop(context);
+                          },
+                          child: const Text('Add'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                child: const Text('Add Day'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _startTimeController,
+            decoration: const InputDecoration(
+              labelText: 'Start Time (HH:mm)',
+              border: OutlineInputBorder(),
+            ),
+            keyboardType: TextInputType.datetime,
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _endTimeController,
+            decoration: const InputDecoration(
+              labelText: 'End Time (HH:mm)',
+              border: OutlineInputBorder(),
+            ),
+            keyboardType: TextInputType.datetime,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _addAvailability,
+            child: const Text('Add Time Slot'),
+          ),
+          const SizedBox(height: 20),
+          Expanded(
+            child: ListView(
+              children: widget.availability.entries
+                  .expand((entry) => [
+                        Text(
+                          entry.key,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
+                        ...entry.value.map((slot) => ListTile(
+                              title: Text(
+                                  'From ${slot['start']} to ${slot['end']}'),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.delete),
+                                onPressed: () {
+                                  widget.onAvailabilityRemoved(entry.key, slot);
+                                },
+                              ),
+                            )),
+                        const Divider(),
+                      ])
+                  .toList(),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
 
 class ManageSpecializationsWidget extends StatefulWidget {
-  const ManageSpecializationsWidget({super.key});
+  final List<String> specializations;
+  final ValueChanged<String> onSpecializationAdded;
+  final ValueChanged<String> onSpecializationRemoved;
+
+  const ManageSpecializationsWidget({
+    super.key,
+    required this.specializations,
+    required this.onSpecializationAdded,
+    required this.onSpecializationRemoved,
+  });
 
   @override
   _ManageSpecializationsWidgetState createState() =>
@@ -10,18 +19,15 @@ class ManageSpecializationsWidget extends StatefulWidget {
 
 class _ManageSpecializationsWidgetState
     extends State<ManageSpecializationsWidget> {
-  List<String> specializations = [];
-  final TextEditingController specializationController =
+  final TextEditingController _specializationController =
       TextEditingController();
 
-  void addSpecialization() {
-    final newSpecialization = specializationController.text.trim();
+  void _addSpecialization() {
+    final newSpecialization = _specializationController.text.trim();
     if (newSpecialization.isNotEmpty &&
-        !specializations.contains(newSpecialization)) {
-      setState(() {
-        specializations.add(newSpecialization);
-      });
-      specializationController.clear();
+        !widget.specializations.contains(newSpecialization)) {
+      widget.onSpecializationAdded(newSpecialization);
+      _specializationController.clear();
     }
   }
 
@@ -39,28 +45,23 @@ class _ManageSpecializationsWidgetState
           const SizedBox(height: 10),
           Wrap(
             spacing: 8.0,
-            children: specializations
+            children: widget.specializations
                 .map((specialization) => Chip(
-                      key: Key('specialization-$specialization'),
                       label: Text(specialization),
-                      onDeleted: () {
-                        setState(() {
-                          specializations.remove(specialization);
-                        });
-                      },
-                      deleteIcon: const Icon(Icons.close),
+                      onDeleted: () =>
+                          widget.onSpecializationRemoved(specialization),
                     ))
                 .toList(),
           ),
           const SizedBox(height: 20),
           TextField(
-            controller: specializationController,
+            controller: _specializationController,
             decoration: InputDecoration(
               labelText: 'Add Specialization',
               border: const OutlineInputBorder(),
               suffixIcon: IconButton(
                 icon: const Icon(Icons.add),
-                onPressed: addSpecialization,
+                onPressed: _addSpecialization,
               ),
             ),
           ),

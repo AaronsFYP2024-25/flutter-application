@@ -1,23 +1,22 @@
 import 'package:flutter/material.dart';
 
 class ContractorProfileOverview extends StatelessWidget {
-  const ContractorProfileOverview({super.key});
+  final List<String> specializations;
+  final Map<String, List<Map<String, String>>> availability;
+  final VoidCallback onEdit;
+
+  const ContractorProfileOverview({
+    super.key,
+    required this.specializations,
+    required this.availability,
+    required this.onEdit,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // Replace with actual data
-    final String name = "John Doe";
+    final String name = "John Doe"; // Replace with actual data
     final String email = "johndoe@example.com";
     final String phone = "+1234567890";
-    final List<String> specializations = ['Plumber', 'Electrician'];
-    final Map<String, List<Map<String, String>>> availability = {
-      "Monday": [
-        {"start": "09:00", "end": "17:00"}
-      ],
-      "Tuesday": [
-        {"start": "10:00", "end": "16:00"}
-      ],
-    };
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -104,23 +103,10 @@ class ContractorProfileOverview extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // Edit and Logout Buttons
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              ElevatedButton(
-                onPressed: () {
-                  // Navigate to Edit Profile page
-                },
-                child: const Text('Edit Profile'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  // Logout functionality
-                },
-                child: const Text('Logout'),
-              ),
-            ],
+          // Edit Button
+          ElevatedButton(
+            onPressed: onEdit,
+            child: const Text('Edit Profile'),
           ),
         ],
       ),
