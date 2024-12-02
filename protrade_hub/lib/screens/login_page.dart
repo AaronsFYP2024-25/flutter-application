@@ -14,7 +14,7 @@ class LoginPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Trade Software Login'),
+        title: const Text('ProTrade Hub'),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -22,16 +22,16 @@ class LoginPage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Add a logo or introductory text
+            // Welcome Text and Logo
             const Text(
-              'Welcome to Trade Software',
+              'Welcome to ProTrade Hub',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
             const Icon(Icons.construction, size: 100, color: Colors.blue),
             const SizedBox(height: 32),
 
-            // Email TextField
+            // Email Input
             TextField(
               controller: _emailController,
               decoration: const InputDecoration(
@@ -42,7 +42,7 @@ class LoginPage extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Password TextField
+            // Password Input
             TextField(
               controller: _passwordController,
               obscureText: true,
@@ -73,7 +73,7 @@ class LoginPage extends StatelessWidget {
                   return;
                 }
 
-                // Role-based Navigation Logic
+                // Role-Based Navigation Logic
                 if (email == 'admin@demo.com' && password == 'admin') {
                   Navigator.push(
                     context,
@@ -92,7 +92,7 @@ class LoginPage extends StatelessWidget {
                 } else if (email == 'contractadmin@demo.com' && password == 'contractadmin') {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const ContractorProfilePage()), // Contractor admin for testing
+                    MaterialPageRoute(builder: (context) => const ContractorProfilePage()),
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -118,5 +118,5 @@ class LoginPage extends StatelessWidget {
         ),
       ),
     );
-  } //end of build
-} //end of LoginPage
+  }
+}
