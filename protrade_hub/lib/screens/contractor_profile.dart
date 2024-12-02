@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:protrade_hub/widgets/edit_profile_widget.dart';
+import '../widgets/contractor_profile_overview.dart';
+import '../widgets/manage_specializations_widget.dart';
+import '../widgets/manage_availability_widget.dart';
 
 class ContractorProfilePage extends StatefulWidget {
   const ContractorProfilePage({super.key});
@@ -8,86 +12,110 @@ class ContractorProfilePage extends StatefulWidget {
 }
 
 class _ContractorProfilePageState extends State<ContractorProfilePage> {
-  List<String> specializations = [];
-  final TextEditingController specializationController = TextEditingController();
+  List<String> specializations = ['Plumber', 'Electrician'];
+  Map<String, List<Map<String, String>>> availability = {
+    "Monday": [],
+    "Tuesday": [],
+  };
 
-  final List<String> jobTags = ["Plumber", "Electrician", "Carpenter", "Painter"];
+  int _selectedIndex = 0;
+
+  void _onSpecializationAdded(String specialization) {
+    setState(() {
+      specializations.add(specialization);
+    });
+  }
+
+  void _onSpecializationRemoved(String specialization) {
+    setState(() {
+      specializations.remove(specialization);
+    });
+  }
+
+  void _onAvailabilityAdded(String day, Map<String, String> slot) {
+    setState(() {
+      availability[day] ??= [];
+      availability[day]!.add(slot);
+    });
+  }
+
+  void _onAvailabilityRemoved(String day, Map<String, String> slot) {
+    setState(() {
+      availability[day]?.remove(slot);
+    });
+  }
+
+  void _onNewDayAdded(String day) {
+    setState(() {
+      if (!availability.containsKey(day)) {
+        availability[day] = [];
+      }
+    });
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final List<Widget> pages = [
+      ContractorProfileOverview(
+        specializations: specializations,
+        availability: availability,
+        onEdit: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => EditProfileWidget(
+                currentName: "John Doe",
+                currentEmail: "johndoe@example.com",
+                currentPhone: "+1234567890",
+                onSave: (updatedProfile) {
+                  // Handle updated profile details here
+                },
+              ),
+            ),
+          );
+        },
+      ),
+      ManageSpecializationsWidget(
+        specializations: specializations,
+        onSpecializationAdded: _onSpecializationAdded,
+        onSpecializationRemoved: _onSpecializationRemoved,
+      ),
+      ManageAvailabilityWidget(
+        availability: availability,
+        onAvailabilityAdded: _onAvailabilityAdded,
+        onAvailabilityRemoved: _onAvailabilityRemoved,
+        onNewDayAdded: _onNewDayAdded, // Pass callback to add new days dynamically
+      ),
+    ];
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Contractor Profile'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Your Specializations',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8.0,
-              children: specializations
-                  .map((specialization) => Chip(
-                        key: Key('specialization-$specialization'), // Assign unique key
-                        label: Text(specialization),
-                        onDeleted: () {
-                          setState(() {
-                            specializations.remove(specialization);
-                          });
-                        },
-                        deleteIcon: const Icon(Icons.close), // Ensure the delete icon is set
-                      ))
-                  .toList(),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              key: const Key('specializationInput'), // Assign unique key
-              controller: specializationController,
-              decoration: InputDecoration(
-                labelText: 'Add Specialization',
-                border: const OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  key: const Key('addSpecializationButton'), // Assign unique key
-                  icon: const Icon(Icons.add),
-                  onPressed: () {
-                    final newSpecialization = specializationController.text.trim();
-                    if (newSpecialization.isNotEmpty &&
-                        !specializations.contains(newSpecialization)) {
-                      setState(() {
-                        specializations.add(newSpecialization);
-                      });
-                      specializationController.clear();
-                    }
-                  },
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Filtered Jobs',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            Expanded(
-              child: ListView(
-                children: jobTags
-                    .where((job) => specializations.any((tag) => job.contains(tag)))
-                    .map((job) => Card(
-                          key: Key('job-$job'), // Assign unique key
-                          child: ListTile(
-                            title: Text(job),
-                          ),
-                        ))
-                    .toList(),
-              ),
-            ),
-          ],
-        ),
+      body: pages[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Overview',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.build),
+            label: 'Specializations',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.schedule),
+            label: 'Availability',
+          ),
+        ],
       ),
     );
   }
