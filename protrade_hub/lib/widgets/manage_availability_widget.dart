@@ -99,6 +99,7 @@ class _ManageAvailabilityWidgetState extends State<ManageAvailabilityWidget> {
             children: [
               Expanded(
                 child: DropdownButtonFormField<String>(
+                  key: const Key('dayDropdown'),
                   value: _selectedDay,
                   onChanged: (value) {
                     setState(() {
@@ -107,6 +108,7 @@ class _ManageAvailabilityWidgetState extends State<ManageAvailabilityWidget> {
                   },
                   items: widget.availability.keys
                       .map((day) => DropdownMenuItem(
+                            key: Key('dropdown_$day'),
                             value: day,
                             child: Text(day),
                           ))
@@ -139,6 +141,7 @@ class _ManageAvailabilityWidgetState extends State<ManageAvailabilityWidget> {
                           child: const Text('Cancel'),
                         ),
                         ElevatedButton(
+                          key: const Key('addNewDayButton'),
                           onPressed: () {
                             _addNewDay();
                             Navigator.pop(context);

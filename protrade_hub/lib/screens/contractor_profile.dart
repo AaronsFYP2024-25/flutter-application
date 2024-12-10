@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:protrade_hub/widgets/display_portfolio_widget.dart';
 import 'package:protrade_hub/widgets/edit_profile_widget.dart';
 import '../widgets/contractor_profile_overview.dart';
 import '../widgets/manage_specializations_widget.dart';
 import '../widgets/manage_availability_widget.dart';
+import '../widgets/manage_portfolio_widget.dart';
 
 class ContractorProfilePage extends StatefulWidget {
   const ContractorProfilePage({super.key});
@@ -18,6 +20,27 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
     "Tuesday": [],
   };
 
+  List<Map<String, dynamic>> mockPortfolio = [
+    {
+      'title': 'Bathroom Renovation',
+      'description': 'Complete bathroom renovation with modern fixtures.',
+      'images': [
+        'https://via.placeholder.com/150',
+        'https://via.placeholder.com/150',
+        'https://via.placeholder.com/150',
+        'https://via.placeholder.com/150',
+      ],
+    },
+    {
+      'title': 'Kitchen Remodel',
+      'description': 'Custom kitchen design with new cabinetry and lighting.',
+      'images': [
+        'https://via.placeholder.com/150',
+        'https://via.placeholder.com/150',
+      ],
+    },
+  ];
+
   int _selectedIndex = 0;
 
   void _onSpecializationAdded(String specialization) {
@@ -32,16 +55,9 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
     });
   }
 
-  void _onAvailabilityAdded(String day, Map<String, String> slot) {
+  void _onAvailabilityAdded(String day, Map<String, String> availabilityItem) {
     setState(() {
-      availability[day] ??= [];
-      availability[day]!.add(slot);
-    });
-  }
-
-  void _onAvailabilityRemoved(String day, Map<String, String> slot) {
-    setState(() {
-      availability[day]?.remove(slot);
+      availability[day]?.add(availabilityItem);
     });
   }
 
@@ -53,7 +69,33 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
     });
   }
 
+  void _onAvailabilityRemoved(String day, Map<String, String> availabilityItem) {
+    setState(() {
+      availability[day]?.remove(availabilityItem);
+    });
+  }
+
+  void _addPortfolioItem(Map<String, dynamic> newItem) {
+    if (mockPortfolio.length >= 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You can only have up to 6 portfolio items.')),
+      );
+      return;
+    }
+
+    setState(() {
+      mockPortfolio.add(newItem);
+    });
+  }
+
+  void _deletePortfolioItem(int index) {
+    setState(() {
+      mockPortfolio.removeAt(index);
+    });
+  }
+
   void _onItemTapped(int index) {
+    print('Navigating to tab: $index'); // Debug output
     setState(() {
       _selectedIndex = index;
     });
@@ -61,6 +103,14 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final List<String> titles = [
+      'Contractor Profile',
+      'Manage Specializations',
+      'Manage Availability',
+      'Portfolio',
+      'Manage Portfolio',
+    ];
+
     final List<Widget> pages = [
       ContractorProfileOverview(
         specializations: specializations,
@@ -90,31 +140,32 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
         availability: availability,
         onAvailabilityAdded: _onAvailabilityAdded,
         onAvailabilityRemoved: _onAvailabilityRemoved,
-        onNewDayAdded: _onNewDayAdded, // Pass callback to add new days dynamically
+        onNewDayAdded: _onNewDayAdded,
+      ),
+      DisplayPortfolioWidget(portfolio: mockPortfolio),
+      ManagePortfolioWidget(
+        portfolio: mockPortfolio,
+        onPortfolioAdded: _addPortfolioItem,
+        onPortfolioDeleted: _deletePortfolioItem,
       ),
     ];
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Contractor Profile'),
+        title: Text(titles[_selectedIndex]),
       ),
       body: pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Overview',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.build),
-            label: 'Specializations',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.schedule),
-            label: 'Availability',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Overview'),
+          BottomNavigationBarItem(icon: Icon(Icons.build), label: 'Specializations'),
+          BottomNavigationBarItem(icon: Icon(Icons.schedule), label: 'Availability'),
+          BottomNavigationBarItem(icon: Icon(Icons.photo_album), label: 'Portfolio'),
+          BottomNavigationBarItem(icon: Icon(Icons.edit), label: 'Manage Portfolio'),
         ],
       ),
     );

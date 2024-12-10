@@ -55,6 +55,7 @@ class _ManageSpecializationsWidgetState
           ),
           const SizedBox(height: 20),
           TextField(
+            key: const Key('addSpecializationButton'),
             controller: _specializationController,
             decoration: InputDecoration(
               labelText: 'Add Specialization',
