@@ -8,18 +8,19 @@ class TestHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
     return super.createHttpClient(context)
-      ..badCertificateCallback = (X509Certificate cert, String host, int port) => true
-      ..addRequestModifier((HttpClientRequest request) async {
-        if (request.uri.host == 'via.placeholder.com') {
-          // Mock response for placeholder images
-          return HttpClientResponseMock();
-        }
-        return request;
-      });
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true
+            ..addRequestModifier((HttpClientRequest request) async {
+              if (request.uri.host == 'via.placeholder.com') {
+                // Mock response for placeholder images
+                return HttpClientResponseMock();
+              }
+              return request;
+            });
   }
 }
 
-class HttpClientResponseMock extends HttpClientResponse {
+abstract class HttpClientResponseMock extends HttpClientResponse {
   @override
   int get statusCode => 200;
 
@@ -50,7 +51,8 @@ void main() {
   });
 
   group('ContractorProfilePage Tests', () {
-    testWidgets('Page loads with all necessary elements', (WidgetTester tester) async {
+    testWidgets('Page loads with all necessary elements',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: ContractorProfilePage(),
@@ -62,13 +64,14 @@ void main() {
 
       // Verify the BottomNavigationBar items by their keys
       expect(find.byIcon(Icons.person), findsOneWidget); // Overview icon
-      expect(find.byIcon(Icons.build), findsOneWidget);  // Specializations icon
+      expect(find.byIcon(Icons.build), findsOneWidget); // Specializations icon
       expect(find.byIcon(Icons.schedule), findsOneWidget); // Availability icon
       expect(find.byIcon(Icons.photo_album), findsOneWidget); // Portfolio icon
       expect(find.byIcon(Icons.edit), findsOneWidget); // Manage Portfolio icon
     });
 
-    testWidgets('Tapping on bottom navigation changes the page', (WidgetTester tester) async {
+    testWidgets('Tapping on bottom navigation changes the page',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: ContractorProfilePage(),
