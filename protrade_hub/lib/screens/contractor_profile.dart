@@ -5,6 +5,7 @@ import '../widgets/contractor_profile_overview.dart';
 import '../widgets/manage_specializations_widget.dart';
 import '../widgets/manage_availability_widget.dart';
 import '../widgets/manage_portfolio_widget.dart';
+import '../widgets/view_jobs_widget.dart';
 
 class ContractorProfilePage extends StatefulWidget {
   const ContractorProfilePage({super.key});
@@ -109,6 +110,7 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
       'Manage Availability',
       'Portfolio',
       'Manage Portfolio',
+      'Available Jobs',
     ];
 
     final List<Widget> pages = [
@@ -148,6 +150,7 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
         onPortfolioAdded: _addPortfolioItem,
         onPortfolioDeleted: _deletePortfolioItem,
       ),
+       const ViewJobsWidget(),
     ];
 
     return Scaffold(
@@ -166,6 +169,7 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
           BottomNavigationBarItem(icon: Icon(Icons.schedule), label: 'Availability'),
           BottomNavigationBarItem(icon: Icon(Icons.photo_album), label: 'Portfolio'),
           BottomNavigationBarItem(icon: Icon(Icons.edit), label: 'Manage Portfolio'),
+          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Look for Jobs'),
         ],
       ),
     );
