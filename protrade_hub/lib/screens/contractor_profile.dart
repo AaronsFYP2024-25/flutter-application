@@ -96,7 +96,7 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
   }
 
   void _onItemTapped(int index) {
-    print('Navigating to tab: $index'); // Debug output
+    print('Navigating to tab: \$index'); // Debug output
     setState(() {
       _selectedIndex = index;
     });
@@ -114,48 +114,61 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
     ];
 
     final List<Widget> pages = [
-      ContractorProfileOverview(
-        specializations: specializations,
-        availability: availability,
-        onEdit: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => EditProfileWidget(
-                currentName: "John Doe",
-                currentEmail: "johndoe@example.com",
-                currentPhone: "+1234567890",
-                onSave: (updatedProfile) {
-                  // Handle updated profile details here
-                },
+      Center(
+        child: ContractorProfileOverview(
+          specializations: specializations,
+          availability: availability,
+          onEdit: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => EditProfileWidget(
+                  currentName: "John Doe",
+                  currentEmail: "johndoe@example.com",
+                  currentPhone: "+1234567890",
+                  onSave: (updatedProfile) {
+                    // Handle updated profile details here
+                  },
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
-      ManageSpecializationsWidget(
-        specializations: specializations,
-        onSpecializationAdded: _onSpecializationAdded,
-        onSpecializationRemoved: _onSpecializationRemoved,
+      Center(
+        child: ManageSpecializationsWidget(
+          specializations: specializations,
+          onSpecializationAdded: _onSpecializationAdded,
+          onSpecializationRemoved: _onSpecializationRemoved,
+        ),
       ),
-      ManageAvailabilityWidget(
-        availability: availability,
-        onAvailabilityAdded: _onAvailabilityAdded,
-        onAvailabilityRemoved: _onAvailabilityRemoved,
-        onNewDayAdded: _onNewDayAdded,
+      Center(
+        child: ManageAvailabilityWidget(
+          availability: availability,
+          onAvailabilityAdded: _onAvailabilityAdded,
+          onAvailabilityRemoved: _onAvailabilityRemoved,
+          onNewDayAdded: _onNewDayAdded,
+        ),
       ),
-      DisplayPortfolioWidget(portfolio: mockPortfolio),
-      ManagePortfolioWidget(
-        portfolio: mockPortfolio,
-        onPortfolioAdded: _addPortfolioItem,
-        onPortfolioDeleted: _deletePortfolioItem,
+      Center(
+        child: DisplayPortfolioWidget(portfolio: mockPortfolio),
       ),
-       const ViewJobsWidget(),
+      Center(
+        child: ManagePortfolioWidget(
+          portfolio: mockPortfolio,
+          onPortfolioAdded: _addPortfolioItem,
+          onPortfolioDeleted: _deletePortfolioItem,
+        ),
+      ),
+      Center(
+        child: const ViewJobsWidget(),
+      ),
     ];
 
     return Scaffold(
       appBar: AppBar(
         title: Text(titles[_selectedIndex]),
+        centerTitle: true,
       ),
       body: pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
