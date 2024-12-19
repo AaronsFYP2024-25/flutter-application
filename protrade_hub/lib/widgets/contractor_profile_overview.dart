@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+ import 'package:flutter/material.dart';
 
 class ContractorProfileOverview extends StatelessWidget {
   final List<String> specializations;
@@ -19,6 +19,7 @@ class ContractorProfileOverview extends StatelessWidget {
     final String phone = "+1234567890";
 
     return SingleChildScrollView(
+      
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
