@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -8,19 +10,43 @@ class SignUpPage extends StatefulWidget {
 }
 
 class _SignUpPageState extends State<SignUpPage> {
-  bool isClient = true; // Tracks whether "Client" or "Contractor" is selected
-  final _formKey = GlobalKey<FormState>(); // Key for form validation
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Controllers for form fields
+  bool isClient = true;
+  final _formKey = GlobalKey<FormState>();
+
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
 
-  final TextEditingController companyController = TextEditingController();
-  final TextEditingController insuranceController = TextEditingController();
-  final TextEditingController fieldXController = TextEditingController();
-  final TextEditingController fieldYController = TextEditingController();
+  Future<void> _signUp() async {
+    if (_formKey.currentState!.validate()) {
+      try {
+        // Firebase Authentication
+        UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+          email: emailController.text.trim(),
+          password: passwordController.text.trim(),
+        );
+
+        // Add User Data to Firestore
+        await _firestore.collection('users').doc(userCredential.user?.uid).set({
+          'email': emailController.text.trim(),
+          'fullName': nameController.text.trim(),
+          'role': isClient ? 'client' : 'contractor',
+          'phone': phoneController.text.trim(),
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+
+        Navigator.pop(context); // Return to login
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +59,6 @@ class _SignUpPageState extends State<SignUpPage> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Animated Toggle Bar
             Row(
               children: [
                 Expanded(
@@ -47,10 +72,8 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       alignment: Alignment.center,
-                      child: const Text(
-                        'Client',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
+                      child: const Text('Client',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ),
@@ -66,48 +89,28 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       alignment: Alignment.center,
-                      child: const Text(
-                        'Contractor',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
+                      child: const Text('Contractor',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 20),
-
-            // Form with Validation
-            Expanded(
-              child: SingleChildScrollView(
-                child: Form(
-                  key: _formKey,
-                  child: isClient ? buildClientForm() : buildContractorForm(),
-                ),
+            Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  buildValidatedField(nameController, 'Full Name'),
+                  buildValidatedField(emailController, 'Email', isEmail: true),
+                  buildValidatedField(passwordController, 'Password', isPassword: true),
+                  buildValidatedField(phoneController, 'Phone Number', isPhone: true),
+                ],
               ),
             ),
-
-            // Submit Button
+            const SizedBox(height: 20),
             ElevatedButton(
-              key: const Key('signUpButton'),
-              onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  // Form is valid
-                  if (isClient) {
-                    print('Client Sign-Up: ${emailController.text}');
-                  } else {
-                    print('Contractor Sign-Up: ${emailController.text}');
-                  }
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Form Submitted Successfully')),
-                  );
-                } else {
-                  // Form is invalid
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please fill out all required fields')),
-                  );
-                }
-              },
+              onPressed: _signUp,
               child: const Text('Sign Up'),
             ),
           ],
@@ -116,42 +119,8 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 
-  // Client Form
-  Widget buildClientForm() {
-    return Column(
-      children: [
-        buildValidatedField(controller: nameController, label: 'Name'),
-        buildValidatedField(controller: emailController, label: 'Email', isEmail: true),
-        buildValidatedField(controller: passwordController, label: 'Password', isPassword: true),
-        buildValidatedField(controller: phoneController, label: 'Phone Number', isPhone: true),
-      ],
-    );
-  }
-
-  // Contractor Form
-  Widget buildContractorForm() {
-    return Column(
-      children: [
-        buildValidatedField(controller: nameController, label: 'Name'),
-        buildValidatedField(controller: companyController, label: 'Company Name'),
-        buildValidatedField(controller: emailController, label: 'Email', isEmail: true),
-        buildValidatedField(controller: passwordController, label: 'Password', isPassword: true),
-        buildValidatedField(controller: phoneController, label: 'Phone Number', isPhone: true),
-        buildValidatedField(controller: insuranceController, label: 'Insurance Number'),
-        buildValidatedField(controller: fieldXController, label: 'Field X'),
-        buildValidatedField(controller: fieldYController, label: 'Field Y'),
-      ],
-    );
-  }
-
-  // Reusable Validated Text Field
-  Widget buildValidatedField({
-    required TextEditingController controller,
-    required String label,
-    bool isPassword = false,
-    bool isEmail = false,
-    bool isPhone = false,
-  }) {
+  Widget buildValidatedField(TextEditingController controller, String label,
+      {bool isPassword = false, bool isEmail = false, bool isPhone = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: TextFormField(
@@ -167,21 +136,14 @@ class _SignUpPageState extends State<SignUpPage> {
           border: const OutlineInputBorder(),
         ),
         validator: (value) {
-          if (value == null || value.isEmpty) {
-            return '$label is required';
-          }
-          if (isEmail && !value.contains('@')) {
-            return 'Enter a valid email';
-          }
-          if (isPhone && value.length < 10) {
-            return 'Enter a valid phone number';
-          }
-          if (isPassword && value.length < 6) {
-            return 'Password must be at least 6 characters';
-          }
+          if (value == null || value.isEmpty) return '$label is required';
+          if (isEmail && !value.contains('@')) return 'Enter a valid email';
+          if (isPhone && value.length < 10) return 'Enter a valid phone number';
+          if (isPassword && value.length < 6) return 'Password must be at least 6 characters';
           return null;
         },
       ),
     );
   }
 }
+
