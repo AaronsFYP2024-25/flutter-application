@@ -93,7 +93,7 @@ class LoginPage extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const ContractorProfilePage()),
-                  );
+                  );//no need for this, as the admin page will be used for both!!!!!! TODO
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Invalid login credentials')),

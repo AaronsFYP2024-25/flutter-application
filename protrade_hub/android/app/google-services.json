@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1031528374971",
+    "project_id": "protrade-app",
+    "storage_bucket": "protrade-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1031528374971:android:cc685731cf3ee381123f9e",
+        "android_client_info": {
+          "package_name": "com.example.protrade_hub"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAMtERmLkJ8bpsWlQ-GXV7S71knqlxAAVs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
