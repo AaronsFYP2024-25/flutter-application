@@ -20,7 +20,7 @@ class _SignUpPageState extends State<SignUpPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
-
+  
   Future<void> _signUp() async {
     if (_formKey.currentState!.validate()) {
       try {
