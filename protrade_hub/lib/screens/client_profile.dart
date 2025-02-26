@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/post_job_widget.dart';
+import '../widgets/edit_job_widget.dart'; // ✅ Import the edit job widget
 
 class ClientProfilePage extends StatefulWidget {
   const ClientProfilePage({super.key});
@@ -9,35 +12,67 @@ class ClientProfilePage extends StatefulWidget {
 }
 
 class _ClientProfilePageState extends State<ClientProfilePage> {
-  final List<Map<String, dynamic>> _postedJobs = []; // Job list
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  List<Map<String, dynamic>> _postedJobs = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchPostedJobs();
+  }
+
+  void _fetchPostedJobs() {
+    String? clientId = _auth.currentUser?.uid;
+    if (clientId == null) return;
+
+    _firestore
+        .collection('jobs')
+        .where('clientId', isEqualTo: clientId)
+        .snapshots()
+        .listen((snapshot) {
+      setState(() {
+        _postedJobs = snapshot.docs.map((doc) {
+          return {
+            'jobId': doc.id,
+            'title': doc['title'],
+            'description': doc['description'],
+            'status': doc['status'],
+          };
+        }).toList();
+      });
+    });
+  }
 
   void _navigateToPostJob() async {
-    final result = await Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => const PostJobWidget(),
       ),
     );
-
-    // Add the posted job to the list
-    if (result != null && result is Map<String, String>) {
-      setState(() {
-        _postedJobs.add({
-          'title': result['title'],
-          'description': result['description'],
-          'status': 'Open',
-        });
-      });
-    }
   }
 
-  void _requestCancellation(int index) {
-    setState(() {
-      _postedJobs[index]['status'] = 'Pending Cancellation';
+  void _navigateToEditJob(String jobId, String title, String description) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditJobWidget(
+          jobId: jobId,
+          currentTitle: title,
+          currentDescription: description,
+        ),
+      ),
+    );
+  }
+
+  void _requestCancellation(String jobId) async {
+    await _firestore.collection('jobs').doc(jobId).update({
+      'status': 'Cancelled',
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Job cancellation requested. Awaiting contractor confirmation.')),
+      const SnackBar(content: Text('Job cancellation requested.')),
     );
   }
 
@@ -91,7 +126,7 @@ class _ClientProfilePageState extends State<ClientProfilePage> {
             ),
             const SizedBox(height: 10),
             _postedJobs.isEmpty
-                ? const Text('No jobs posted yet.')
+                ? const Center(child: Text('No jobs posted yet.'))
                 : ListView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
@@ -100,7 +135,10 @@ class _ClientProfilePageState extends State<ClientProfilePage> {
                       final job = _postedJobs[index];
                       return Card(
                         child: ListTile(
-                          title: Text(job['title'] ?? 'No Title'),
+                          title: Text(
+                            job['title'] ?? 'No Title',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -109,20 +147,31 @@ class _ClientProfilePageState extends State<ClientProfilePage> {
                               Text(
                                 'Status: ${job['status']}',
                                 style: TextStyle(
-                                  color: job['status'] == 'Pending Cancellation'
-                                      ? Colors.orange
+                                  color: job['status'] == 'Cancelled'
+                                      ? Colors.red
                                       : Colors.green,
                                 ),
                               ),
                             ],
                           ),
-                          trailing: job['status'] == 'Open'
-                              ? IconButton(
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit, color: Colors.blue),
+                                onPressed: () => _navigateToEditJob(
+                                  job['jobId'], job['title'], job['description'],
+                                ),
+                                tooltip: 'Edit Job Description',
+                              ),
+                              if (job['status'] == 'Open')
+                                IconButton(
                                   icon: const Icon(Icons.cancel, color: Colors.red),
-                                  onPressed: () => _requestCancellation(index),
-                                  tooltip: 'Request Job Cancellation',
-                                )
-                              : null,
+                                  onPressed: () => _requestCancellation(job['jobId']),
+                                  tooltip: 'Cancel Job',
+                                ),
+                            ],
+                          ),
                         ),
                       );
                     },

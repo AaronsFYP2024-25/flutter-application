@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class PostJobWidget extends StatefulWidget {
   const PostJobWidget({super.key});
@@ -11,14 +13,45 @@ class _PostJobWidgetState extends State<PostJobWidget> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+  bool _isLoading = false;
 
-  void _submitJob() {
-    if (_formKey.currentState!.validate()) {
-      final job = {
+  Future<void> _submitJob() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      String? clientId = FirebaseAuth.instance.currentUser?.uid;
+      if (clientId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User not logged in')),
+        );
+        return;
+      }
+
+      await FirebaseFirestore.instance.collection('jobs').add({
+        'clientId': clientId,
         'title': _titleController.text.trim(),
         'description': _descriptionController.text.trim(),
-      };
-      Navigator.pop(context, job); // Return the job back to Client Profile Page
+        'status': 'Open',
+        'timestamp': FieldValue.serverTimestamp(), // ✅ Firestore sets the timestamp
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Job posted successfully!')),
+      );
+
+      Navigator.pop(context); // ✅ Go back to Client Profile Page after posting
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error posting job: $e')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -67,10 +100,12 @@ class _PostJobWidgetState extends State<PostJobWidget> {
 
               // Submit Button
               Center(
-                child: ElevatedButton(
-                  onPressed: _submitJob,
-                  child: const Text('Post Job'),
-                ),
+                child: _isLoading
+                    ? const CircularProgressIndicator() // ✅ Show loading state
+                    : ElevatedButton(
+                        onPressed: _submitJob,
+                        child: const Text('Post Job'),
+                      ),
               ),
             ],
           ),
