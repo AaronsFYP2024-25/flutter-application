@@ -13,137 +13,137 @@ class _SignUpPageState extends State<SignUpPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  bool isClient = true;
-  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _fullNameController = TextEditingController();
+  final TextEditingController _phoneNumberController = TextEditingController();
+  bool _isContractor = false; // Toggle for contractor or client
 
-  final TextEditingController nameController = TextEditingController();
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-  final TextEditingController phoneController = TextEditingController();
-  
   Future<void> _signUp() async {
-    if (_formKey.currentState!.validate()) {
-      try {
-        // Firebase Authentication
-        UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-          email: emailController.text.trim(),
-          password: passwordController.text.trim(),
-        );
+    try {
+      // ✅ Create user in Firebase Authentication
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
 
-        // Add User Data to Firestore
-        await _firestore.collection('users').doc(userCredential.user?.uid).set({
-          'email': emailController.text.trim(),
-          'fullName': nameController.text.trim(),
-          'role': isClient ? 'client' : 'contractor',
-          'phone': phoneController.text.trim(),
-          'createdAt': FieldValue.serverTimestamp(),
-        });
+      User? user = userCredential.user;
+      if (user == null) return;
 
-        Navigator.pop(context); // Return to login
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
-      }
+      // ✅ Define Firestore collection based on user type
+      String collection = _isContractor ? "contractor_profiles" : "client_profiles";
+
+      // ✅ Store user data in Firestore (including UID)
+      await _firestore.collection(collection).doc(user.uid).set({
+        "userId": user.uid,
+        "email": _emailController.text.trim(),
+        "fullName": _fullNameController.text.trim(),
+        "phoneNumber": _phoneNumberController.text.trim(),
+        "role": _isContractor ? "contractor" : "client",
+      });
+
+      // ✅ Navigate to login page
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e")),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Sign Up'),
-        centerTitle: true,
-      ),
-      body: Padding(
+      appBar: AppBar(title: const Text("Sign Up")),
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
+            // Role Selection Tabs
             Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Expanded(
                   child: GestureDetector(
-                    onTap: () => setState(() => isClient = true),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
+                    onTap: () => setState(() => _isContractor = false),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
-                        color: isClient ? Colors.blue : Colors.grey[300],
-                        borderRadius: BorderRadius.circular(10),
+                        color: !_isContractor ? Colors.blue : Colors.grey[300],
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      alignment: Alignment.center,
-                      child: const Text('Client',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      child: const Center(
+                        child: Text("Client", style: TextStyle(color: Colors.white, fontSize: 16)),
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: GestureDetector(
-                    onTap: () => setState(() => isClient = false),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
+                    onTap: () => setState(() => _isContractor = true),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
-                        color: isClient ? Colors.grey[300] : Colors.blue,
-                        borderRadius: BorderRadius.circular(10),
+                        color: _isContractor ? Colors.blue : Colors.grey[300],
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      alignment: Alignment.center,
-                      child: const Text('Contractor',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      child: const Center(
+                        child: Text("Contractor", style: TextStyle(color: Colors.white, fontSize: 16)),
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 20),
-            Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  buildValidatedField(nameController, 'Full Name'),
-                  buildValidatedField(emailController, 'Email', isEmail: true),
-                  buildValidatedField(passwordController, 'Password', isPassword: true),
-                  buildValidatedField(phoneController, 'Phone Number', isPhone: true),
-                ],
+
+            // Form Fields
+            TextFormField(
+              controller: _fullNameController,
+              decoration: const InputDecoration(
+                labelText: "Full Name",
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            TextFormField(
+              controller: _emailController,
+              decoration: const InputDecoration(
+                labelText: "Email",
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            TextFormField(
+              controller: _passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: "Password",
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            TextFormField(
+              controller: _phoneNumberController,
+              decoration: const InputDecoration(
+                labelText: "Phone Number",
+                border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 20),
+
+            // Sign Up Button
             ElevatedButton(
               onPressed: _signUp,
-              child: const Text('Sign Up'),
+              child: const Text("Sign Up"),
             ),
           ],
         ),
       ),
     );
   }
-
-  Widget buildValidatedField(TextEditingController controller, String label,
-      {bool isPassword = false, bool isEmail = false, bool isPhone = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: TextFormField(
-        controller: controller,
-        obscureText: isPassword,
-        keyboardType: isEmail
-            ? TextInputType.emailAddress
-            : isPhone
-                ? TextInputType.phone
-                : TextInputType.text,
-        decoration: InputDecoration(
-          labelText: label,
-          border: const OutlineInputBorder(),
-        ),
-        validator: (value) {
-          if (value == null || value.isEmpty) return '$label is required';
-          if (isEmail && !value.contains('@')) return 'Enter a valid email';
-          if (isPhone && value.length < 10) return 'Enter a valid phone number';
-          if (isPassword && value.length < 6) return 'Password must be at least 6 characters';
-          return null;
-        },
-      ),
-    );
-  }
 }
-
