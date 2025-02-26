@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/post_job_widget.dart';
+import '../widgets/edit_job_widget.dart'; // ✅ Import the edit job widget
 
 class ClientProfilePage extends StatefulWidget {
   const ClientProfilePage({super.key});
@@ -48,6 +49,19 @@ class _ClientProfilePageState extends State<ClientProfilePage> {
       context,
       MaterialPageRoute(
         builder: (context) => const PostJobWidget(),
+      ),
+    );
+  }
+
+  void _navigateToEditJob(String jobId, String title, String description) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditJobWidget(
+          jobId: jobId,
+          currentTitle: title,
+          currentDescription: description,
+        ),
       ),
     );
   }
@@ -140,13 +154,24 @@ class _ClientProfilePageState extends State<ClientProfilePage> {
                               ),
                             ],
                           ),
-                          trailing: job['status'] == 'Open'
-                              ? IconButton(
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit, color: Colors.blue),
+                                onPressed: () => _navigateToEditJob(
+                                  job['jobId'], job['title'], job['description'],
+                                ),
+                                tooltip: 'Edit Job Description',
+                              ),
+                              if (job['status'] == 'Open')
+                                IconButton(
                                   icon: const Icon(Icons.cancel, color: Colors.red),
                                   onPressed: () => _requestCancellation(job['jobId']),
                                   tooltip: 'Cancel Job',
-                                )
-                              : null,
+                                ),
+                            ],
+                          ),
                         ),
                       );
                     },
