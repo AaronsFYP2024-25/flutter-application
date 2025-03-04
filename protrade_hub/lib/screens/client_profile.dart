@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/post_job_widget.dart';
-import '../widgets/edit_job_widget.dart'; // ✅ Import the edit job widget
+import '../widgets/edit_job_widget.dart';
+import '../widgets/view_jobs_widget.dart';
 
 class ClientProfilePage extends StatefulWidget {
   const ClientProfilePage({super.key});
@@ -15,11 +16,30 @@ class _ClientProfilePageState extends State<ClientProfilePage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   List<Map<String, dynamic>> _postedJobs = [];
+  String _clientName = "";
+  String _clientEmail = "";
+  String _clientPhone = "";
 
   @override
   void initState() {
     super.initState();
+    _fetchClientData();
     _fetchPostedJobs();
+  }
+
+  void _fetchClientData() async {
+    String? clientId = _auth.currentUser?.uid;
+    if (clientId == null) return;
+
+    DocumentSnapshot clientDoc =
+        await _firestore.collection('users').doc(clientId).get();
+    if (clientDoc.exists) {
+      setState(() {
+        _clientName = clientDoc['fullName'] ?? 'Unknown';
+        _clientEmail = clientDoc['email'] ?? 'Unknown';
+        _clientPhone = clientDoc['phone'] ?? 'Unknown';
+      });
+    }
   }
 
   void _fetchPostedJobs() {
@@ -47,9 +67,7 @@ class _ClientProfilePageState extends State<ClientProfilePage> {
   void _navigateToPostJob() async {
     await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const PostJobWidget(),
-      ),
+      MaterialPageRoute(builder: (context) => const PostJobWidget()),
     );
   }
 
@@ -79,16 +97,12 @@ class _ClientProfilePageState extends State<ClientProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Client Profile'),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
+      appBar: AppBar(title: const Text('Client Profile')),
+      body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Profile Info
+            // Client Info
             Row(
               children: [
                 const CircleAvatar(
@@ -98,20 +112,16 @@ class _ClientProfilePageState extends State<ClientProfilePage> {
                 const SizedBox(width: 16),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      'Client Name',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                    Text('client@example.com'),
-                    Text('+123 456 7890'),
+                  children: [
+                    Text(_clientName, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    Text(_clientEmail),
+                    Text(_clientPhone),
                   ],
                 ),
               ],
             ),
             const SizedBox(height: 20),
 
-            // Post a Job Button
             ElevatedButton.icon(
               onPressed: _navigateToPostJob,
               icon: const Icon(Icons.add),
@@ -120,62 +130,51 @@ class _ClientProfilePageState extends State<ClientProfilePage> {
             const SizedBox(height: 20),
 
             // Job List
-            const Text(
-              'Your Posted Jobs:',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            _postedJobs.isEmpty
-                ? const Center(child: Text('No jobs posted yet.'))
-                : ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _postedJobs.length,
-                    itemBuilder: (context, index) {
-                      final job = _postedJobs[index];
-                      return Card(
-                        child: ListTile(
-                          title: Text(
-                            job['title'] ?? 'No Title',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(job['description'] ?? 'No Description'),
-                              const SizedBox(height: 5),
-                              Text(
-                                'Status: ${job['status']}',
-                                style: TextStyle(
-                                  color: job['status'] == 'Cancelled'
-                                      ? Colors.red
-                                      : Colors.green,
+            const Text('Your Posted Jobs:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Expanded(
+              child: _postedJobs.isEmpty
+                  ? const Center(child: Text('No jobs posted yet.'))
+                  : ListView.builder(
+                      itemCount: _postedJobs.length,
+                      itemBuilder: (context, index) {
+                        final job = _postedJobs[index];
+                        return Card(
+                          child: ListTile(
+                            title: Text(job['title'] ?? 'No Title'),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(job['description'] ?? 'No Description'),
+                                const SizedBox(height: 5),
+                                Text(
+                                  'Status: ${job['status']}',
+                                  style: TextStyle(
+                                    color: job['status'] == 'Cancelled' ? Colors.red : Colors.green,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.edit, color: Colors.blue),
-                                onPressed: () => _navigateToEditJob(
-                                  job['jobId'], job['title'], job['description'],
-                                ),
-                                tooltip: 'Edit Job Description',
-                              ),
-                              if (job['status'] == 'Open')
+                              ],
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
                                 IconButton(
-                                  icon: const Icon(Icons.cancel, color: Colors.red),
-                                  onPressed: () => _requestCancellation(job['jobId']),
-                                  tooltip: 'Cancel Job',
+                                  icon: const Icon(Icons.edit, color: Colors.blue),
+                                  onPressed: () => _navigateToEditJob(job['jobId'], job['title'], job['description']),
+                                  tooltip: 'Edit Job',
                                 ),
-                            ],
+                                if (job['status'] == 'Open')
+                                  IconButton(
+                                    icon: const Icon(Icons.cancel, color: Colors.red),
+                                    onPressed: () => _requestCancellation(job['jobId']),
+                                    tooltip: 'Cancel Job',
+                                  ),
+                              ],
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
+                        );
+                      },
+                    ),
+            ),
           ],
         ),
       ),
