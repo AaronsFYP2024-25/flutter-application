@@ -1,74 +1,73 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
-class ManagePortfolioWidget extends StatelessWidget {
-  final List<Map<String, dynamic>> portfolio;
-  final void Function(Map<String, dynamic>) onPortfolioAdded;
-  final void Function(int) onPortfolioDeleted;
+class ManagePortfolioWidget extends StatefulWidget {
+  final List<String> portfolio;
+  final Function(String) onPortfolioAdded;
+  final Function(String) onPortfolioRemoved;
 
   const ManagePortfolioWidget({
+    super.key,
     required this.portfolio,
     required this.onPortfolioAdded,
-    required this.onPortfolioDeleted,
-    Key? key,
-  }) : super(key: key);
+    required this.onPortfolioRemoved,
+  });
 
-  void _addPortfolioItem(BuildContext context) {
-    if (portfolio.length >= 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('You can only have up to 6 portfolio items.')),
-      );
-      return;
-    }
+  @override
+  _ManagePortfolioWidgetState createState() => _ManagePortfolioWidgetState();
+}
 
-    final newPortfolioItem = {
-      'title': 'New Portfolio Item',
-      'description': 'Description of the new item.',
-      'images': [
-        'https://via.placeholder.com/150',
-      ],
-    };
+class _ManagePortfolioWidgetState extends State<ManagePortfolioWidget> {
+  final ImagePicker _picker = ImagePicker();
 
-    onPortfolioAdded(newPortfolioItem);
-    Navigator.pop(context); // Return to the previous screen after adding
+  Future<void> _uploadImage() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image == null) return;
+
+    File file = File(image.path);
+    String fileName = DateTime.now().millisecondsSinceEpoch.toString();
+
+    Reference storageRef = FirebaseStorage.instance.ref().child("portfolio/$fileName.jpg");
+    await storageRef.putFile(file);
+    String downloadUrl = await storageRef.getDownloadURL();
+
+    widget.onPortfolioAdded(downloadUrl);
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Manage Portfolio')),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              itemCount: portfolio.length,
-              itemBuilder: (context, index) {
-                final item = portfolio[index];
-                return ListTile(
-                  key: Key('portfolio_item_$index'),
-                  title: Text(item['title']),
-                  subtitle: Text(item['description']),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete),
-                    onPressed: () => onPortfolioDeleted(index),
-                  ),
-                );
-              },
+      appBar: AppBar(title: const Text("Manage Portfolio")),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            ElevatedButton(
+              onPressed: _uploadImage,
+              child: const Text("Upload Image"),
             ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final newPortfolioItem = {
-                'title': 'New Portfolio Item',
-                'description': 'Description of the new item.',
-                'images': ['https://via.placeholder.com/150'],
-              };
-              onPortfolioAdded(newPortfolioItem); // Add the portfolio item
-              // Ensure there's no Navigator.pop(context) here unless explicitly intended
-            },
-            child: const Text('Add Portfolio Item'),
-          ),
-        ],
+            Expanded(
+              child: ListView.builder(
+                itemCount: widget.portfolio.length,
+                itemBuilder: (context, index) {
+                  return Card(
+                    child: ListTile(
+                      leading: Image.network(widget.portfolio[index], width: 50, height: 50, fit: BoxFit.cover),
+                      title: const Text("Portfolio Image"),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () => widget.onPortfolioRemoved(widget.portfolio[index]),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

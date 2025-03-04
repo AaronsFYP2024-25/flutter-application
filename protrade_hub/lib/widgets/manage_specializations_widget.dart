@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-class ManageSpecializationsWidget extends StatefulWidget {
+class ManageSpecializationsWidget extends StatelessWidget {
   final List<String> specializations;
-  final ValueChanged<String> onSpecializationAdded;
-  final ValueChanged<String> onSpecializationRemoved;
+  final Function(String) onSpecializationAdded;
+  final Function(String) onSpecializationRemoved;
 
   const ManageSpecializationsWidget({
     super.key,
@@ -13,60 +13,45 @@ class ManageSpecializationsWidget extends StatefulWidget {
   });
 
   @override
-  _ManageSpecializationsWidgetState createState() =>
-      _ManageSpecializationsWidgetState();
-}
-
-class _ManageSpecializationsWidgetState
-    extends State<ManageSpecializationsWidget> {
-  final TextEditingController _specializationController =
-      TextEditingController();
-
-  void _addSpecialization() {
-    final newSpecialization = _specializationController.text.trim();
-    if (newSpecialization.isNotEmpty &&
-        !widget.specializations.contains(newSpecialization)) {
-      widget.onSpecializationAdded(newSpecialization);
-      _specializationController.clear();
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Your Specializations',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8.0,
-            children: widget.specializations
-                .map((specialization) => Chip(
-                      label: Text(specialization),
-                      onDeleted: () =>
-                          widget.onSpecializationRemoved(specialization),
-                    ))
-                .toList(),
-          ),
-          const SizedBox(height: 20),
-          TextField(
-            key: const Key('addSpecializationButton'),
-            controller: _specializationController,
-            decoration: InputDecoration(
-              labelText: 'Add Specialization',
-              border: const OutlineInputBorder(),
-              suffixIcon: IconButton(
-                icon: const Icon(Icons.add),
-                onPressed: _addSpecialization,
+    final TextEditingController _controller = TextEditingController();
+
+    return Scaffold(
+      appBar: AppBar(title: const Text("Manage Specializations")),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            TextField(
+              controller: _controller,
+              decoration: const InputDecoration(labelText: "Enter specialization (e.g., Plumber, Electrician)"),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () {
+                if (_controller.text.isNotEmpty) {
+                  onSpecializationAdded(_controller.text);
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text("Add Specialization"),
+            ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: specializations.length,
+                itemBuilder: (context, index) {
+                  return ListTile(
+                    title: Text(specializations[index]),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () => onSpecializationRemoved(specializations[index]),
+                    ),
+                  );
+                },
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
