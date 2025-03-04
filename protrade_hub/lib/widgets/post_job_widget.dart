@@ -13,45 +13,23 @@ class _PostJobWidgetState extends State<PostJobWidget> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-  bool _isLoading = false;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  Future<void> _submitJob() async {
-    if (!_formKey.currentState!.validate()) return;
+  void _postJob() async {
+    if (_formKey.currentState!.validate()) {
+      String? clientId = _auth.currentUser?.uid;
+      if (clientId == null) return;
 
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      String? clientId = FirebaseAuth.instance.currentUser?.uid;
-      if (clientId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('User not logged in')),
-        );
-        return;
-      }
-
-      await FirebaseFirestore.instance.collection('jobs').add({
+      await _firestore.collection('jobs').add({
         'clientId': clientId,
         'title': _titleController.text.trim(),
         'description': _descriptionController.text.trim(),
         'status': 'Open',
-        'timestamp': FieldValue.serverTimestamp(), // ✅ Firestore sets the timestamp
+        'createdAt': FieldValue.serverTimestamp(),
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Job posted successfully!')),
-      );
-
-      Navigator.pop(context); // ✅ Go back to Client Profile Page after posting
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error posting job: $e')),
-      );
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      Navigator.pop(context);
     }
   }
 
@@ -59,65 +37,32 @@ class _PostJobWidgetState extends State<PostJobWidget> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Post a Job')),
-      body: SingleChildScrollView(
+      body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Post a Job',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16.0),
-
-              // Job Title
               TextFormField(
                 controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Job Title',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) =>
-                    value == null || value.trim().isEmpty ? 'Enter a title' : null,
+                decoration: const InputDecoration(labelText: 'Job Title'),
+                validator: (value) => value!.isEmpty ? 'Enter a job title' : null,
               ),
-              const SizedBox(height: 16.0),
-
-              // Job Description
+              const SizedBox(height: 10),
               TextFormField(
                 controller: _descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Job Description',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 5,
-                validator: (value) => value == null || value.trim().isEmpty
-                    ? 'Enter a description'
-                    : null,
+                decoration: const InputDecoration(labelText: 'Job Description'),
+                validator: (value) => value!.isEmpty ? 'Enter a job description' : null,
               ),
               const SizedBox(height: 20),
-
-              // Submit Button
-              Center(
-                child: _isLoading
-                    ? const CircularProgressIndicator() // ✅ Show loading state
-                    : ElevatedButton(
-                        onPressed: _submitJob,
-                        child: const Text('Post Job'),
-                      ),
+              ElevatedButton(
+                onPressed: _postJob,
+                child: const Text('Submit'),
               ),
             ],
           ),
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
   }
 }
