@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class ManageSpecializationsWidget extends StatelessWidget {
+class ManageSpecializationsWidget extends StatefulWidget {
   final List<String> specializations;
   final Function(String) onSpecializationAdded;
   final Function(String) onSpecializationRemoved;
@@ -13,9 +13,23 @@ class ManageSpecializationsWidget extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final TextEditingController _controller = TextEditingController();
+  _ManageSpecializationsWidgetState createState() => _ManageSpecializationsWidgetState();
+}
 
+class _ManageSpecializationsWidgetState extends State<ManageSpecializationsWidget> {
+  final TextEditingController _controller = TextEditingController();
+
+  void _addSpecialization() {
+    String newSpecialization = _controller.text.trim();
+    if (newSpecialization.isNotEmpty && !widget.specializations.contains(newSpecialization)) {
+      widget.onSpecializationAdded(newSpecialization);
+      _controller.clear();
+      setState(() {});
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Manage Specializations")),
       body: Padding(
@@ -24,27 +38,25 @@ class ManageSpecializationsWidget extends StatelessWidget {
           children: [
             TextField(
               controller: _controller,
-              decoration: const InputDecoration(labelText: "Enter specialization (e.g., Plumber, Electrician)"),
+              decoration: const InputDecoration(
+                labelText: "Enter specialization (e.g., Plumber, Electrician)",
+              ),
             ),
             const SizedBox(height: 10),
             ElevatedButton(
-              onPressed: () {
-                if (_controller.text.isNotEmpty) {
-                  onSpecializationAdded(_controller.text);
-                  Navigator.pop(context);
-                }
-              },
+              onPressed: _addSpecialization,
               child: const Text("Add Specialization"),
             ),
+            const SizedBox(height: 20),
             Expanded(
               child: ListView.builder(
-                itemCount: specializations.length,
+                itemCount: widget.specializations.length,
                 itemBuilder: (context, index) {
                   return ListTile(
-                    title: Text(specializations[index]),
+                    title: Text(widget.specializations[index]),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => onSpecializationRemoved(specializations[index]),
+                      onPressed: () => widget.onSpecializationRemoved(widget.specializations[index]),
                     ),
                   );
                 },

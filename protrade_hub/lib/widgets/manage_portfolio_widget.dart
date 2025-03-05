@@ -49,6 +49,7 @@ class _ManagePortfolioWidgetState extends State<ManagePortfolioWidget> {
               onPressed: _uploadImage,
               child: const Text("Upload Image"),
             ),
+            const SizedBox(height: 20),
             Expanded(
               child: ListView.builder(
                 itemCount: widget.portfolio.length,
