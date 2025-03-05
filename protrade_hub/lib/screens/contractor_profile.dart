@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/view_jobs_widget.dart';
+import '../widgets/view_my_jobs_widget.dart';
 import '../widgets/manage_availability_widget.dart';
 import '../widgets/manage_specializations_widget.dart';
 import '../widgets/manage_portfolio_widget.dart';
@@ -50,6 +51,36 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
     }
   }
 
+  // Updates Firestore when availability is changed
+  void _updateAvailabilityInFirestore() {
+    String? contractorId = _auth.currentUser?.uid;
+    if (contractorId != null) {
+      _firestore.collection("contractor_profiles").doc(contractorId).update({
+        "availability": _availability,
+      });
+    }
+  }
+
+  // Updates Firestore when specializations are changed
+  void _updateSpecializationsInFirestore() {
+    String? contractorId = _auth.currentUser?.uid;
+    if (contractorId != null) {
+      _firestore.collection("contractor_profiles").doc(contractorId).update({
+        "specializations": _specializations,
+      });
+    }
+  }
+
+  // Updates Firestore when portfolio is changed
+  void _updatePortfolioInFirestore() {
+    String? contractorId = _auth.currentUser?.uid;
+    if (contractorId != null) {
+      _firestore.collection("contractor_profiles").doc(contractorId).update({
+        "portfolio": _portfolio,
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -89,6 +120,20 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
               icon: const Icon(Icons.work),
               label: const Text('View Available Jobs'),
             ),
+
+            const SizedBox(height: 10),
+
+            // View My Jobs Button
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ViewMyJobsWidget()),
+                );
+              },
+              icon: const Icon(Icons.assignment),
+              label: const Text('My Jobs'),
+            ),
           ],
         ),
       ),
@@ -109,11 +154,13 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
                         setState(() {
                           _availability.add(newAvailability);
                         });
+                        _updateAvailabilityInFirestore();
                       },
                       onAvailabilityRemoved: (removedAvailability) {
                         setState(() {
                           _availability.remove(removedAvailability);
                         });
+                        _updateAvailabilityInFirestore();
                       },
                     ),
                   ),
@@ -135,11 +182,13 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
                         setState(() {
                           _specializations.add(newSpecialization);
                         });
+                        _updateSpecializationsInFirestore();
                       },
                       onSpecializationRemoved: (removedSpecialization) {
                         setState(() {
                           _specializations.remove(removedSpecialization);
                         });
+                        _updateSpecializationsInFirestore();
                       },
                     ),
                   ),
@@ -161,11 +210,13 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
                         setState(() {
                           _portfolio.add(newPortfolioItem);
                         });
+                        _updatePortfolioInFirestore();
                       },
                       onPortfolioRemoved: (removedPortfolioItem) {
                         setState(() {
                           _portfolio.remove(removedPortfolioItem);
                         });
+                        _updatePortfolioInFirestore();
                       },
                     ),
                   ),

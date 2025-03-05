@@ -20,10 +20,11 @@ class _ViewJobsWidgetState extends State<ViewJobsWidget> {
     _fetchJobs();
   }
 
+  // Fetch jobs from Firestore where the status is "Open"
   void _fetchJobs() {
     _firestore
         .collection('jobs')
-        .where('status', isEqualTo: 'Open') // Only show open jobs
+        .where('status', isEqualTo: 'Open') 
         .snapshots()
         .listen((snapshot) {
       setState(() {
@@ -40,11 +41,11 @@ class _ViewJobsWidgetState extends State<ViewJobsWidget> {
     });
   }
 
+  // Accept job and update Firestore with the assigned contractor
   void _acceptJob(String jobId) async {
     String? contractorId = _auth.currentUser?.uid;
     if (contractorId == null) return;
 
-    // Show a confirmation dialog before accepting the job
     bool confirm = await _showConfirmationDialog();
     if (!confirm) return;
 
@@ -58,6 +59,7 @@ class _ViewJobsWidgetState extends State<ViewJobsWidget> {
     );
   }
 
+  // Show confirmation dialog before accepting a job
   Future<bool> _showConfirmationDialog() async {
     return await showDialog<bool>(
           context: context,
