@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/view_jobs_widget.dart';
-import '../widgets/view_my_jobs_widget.dart';
 import '../widgets/manage_availability_widget.dart';
 import '../widgets/manage_specializations_widget.dart';
 import '../widgets/manage_portfolio_widget.dart';
@@ -119,20 +118,6 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
               },
               icon: const Icon(Icons.work),
               label: const Text('View Available Jobs'),
-            ),
-
-            const SizedBox(height: 10),
-
-            // View My Jobs Button
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ViewMyJobsWidget()),
-                );
-              },
-              icon: const Icon(Icons.assignment),
-              label: const Text('My Jobs'),
             ),
           ],
         ),
