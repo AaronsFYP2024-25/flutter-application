@@ -20,11 +20,11 @@ class _ViewJobsWidgetState extends State<ViewJobsWidget> {
     _fetchJobs();
   }
 
-  // Fetch jobs from Firestore where the status is "Open"
+  // Fetch open jobs
   void _fetchJobs() {
     _firestore
         .collection('jobs')
-        .where('status', isEqualTo: 'Open') 
+        .where('status', isEqualTo: 'Open')
         .snapshots()
         .listen((snapshot) {
       setState(() {
@@ -41,44 +41,35 @@ class _ViewJobsWidgetState extends State<ViewJobsWidget> {
     });
   }
 
-  // Accept job and update Firestore with the assigned contractor
-  void _acceptJob(String jobId) async {
+  // Apply for a job
+  void _applyForJob(String jobId) async {
     String? contractorId = _auth.currentUser?.uid;
     if (contractorId == null) return;
 
-    bool confirm = await _showConfirmationDialog();
-    if (!confirm) return;
+    // Check if contractor already applied
+    var existingApplication = await _firestore
+        .collection('job_applications')
+        .where('jobId', isEqualTo: jobId)
+        .where('contractorId', isEqualTo: contractorId)
+        .get();
 
-    await _firestore.collection('jobs').doc(jobId).update({
-      'status': 'In Progress',
-      'assignedTo': contractorId,
+    if (existingApplication.docs.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You have already applied for this job.')),
+      );
+      return;
+    }
+
+    await _firestore.collection('job_applications').add({
+      'jobId': jobId,
+      'contractorId': contractorId,
+      'status': 'Pending',
+      'appliedAt': FieldValue.serverTimestamp(),
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Job accepted successfully!')),
+      const SnackBar(content: Text('Application submitted! Waiting for client approval.')),
     );
-  }
-
-  // Show confirmation dialog before accepting a job
-  Future<bool> _showConfirmationDialog() async {
-    return await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text("Confirm Job Acceptance"),
-            content: const Text("Are you sure you want to accept this job?"),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text("Cancel"),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text("Accept"),
-              ),
-            ],
-          ),
-        ) ??
-        false;
   }
 
   @override
@@ -105,8 +96,8 @@ class _ViewJobsWidgetState extends State<ViewJobsWidget> {
                         ],
                       ),
                       trailing: ElevatedButton(
-                        onPressed: () => _acceptJob(job['jobId']),
-                        child: const Text('Accept Job'),
+                        onPressed: () => _applyForJob(job['jobId']),
+                        child: const Text('Apply for Job'),
                       ),
                     ),
                   );

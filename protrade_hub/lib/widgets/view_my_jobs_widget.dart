@@ -1,91 +1,86 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'dart:async';
+import 'view_job_applications_widget.dart';
+import 'edit_job_widget.dart';
 
-class ViewMyJobsWidget extends StatefulWidget {
-  const ViewMyJobsWidget({super.key});
+class ViewMyJobsWidget extends StatelessWidget {
+  final String clientId;
+  const ViewMyJobsWidget({super.key, required this.clientId});
 
-  @override
-  _ViewMyJobsWidgetState createState() => _ViewMyJobsWidgetState();
-}
-
-class _ViewMyJobsWidgetState extends State<ViewMyJobsWidget> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  List<Map<String, dynamic>> _myJobs = [];
-  late StreamSubscription _jobSubscription;
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchMyJobs();
+  void _deleteJob(BuildContext context, String jobId) async {
+    try {
+      await FirebaseFirestore.instance.collection('jobs').doc(jobId).delete();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Job deleted successfully')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error deleting job: $e')),
+      );
+    }
   }
 
-  // Fetch jobs where the contractor is assigned
-  void _fetchMyJobs() {
-    String? contractorId = _auth.currentUser?.uid;
-    if (contractorId == null) return;
-
-    _jobSubscription = _firestore
-        .collection('jobs')
-        .where('assignedTo', isEqualTo: contractorId)
-        .snapshots()
-        .listen((snapshot) {
-      if (!mounted) return; // Prevent calling setState() after dispose
-      setState(() {
-        _myJobs = snapshot.docs.map((doc) {
-          return {
-            'jobId': doc.id,
-            'title': doc['title'],
-            'description': doc['description'],
-            'status': doc['status'],
-            'clientId': doc['clientId'],
-          };
-        }).toList();
-      });
-    }, onError: (error) {
-      if (error is FirebaseException && error.code == 'permission-denied') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Permission denied: Unable to load jobs.')),
-        );
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _jobSubscription.cancel(); // Cancel Firestore listener when the widget is removed
-    super.dispose();
+  void _cancelJob(BuildContext context, String jobId) async {
+    try {
+      await FirebaseFirestore.instance.collection('jobs').doc(jobId).update({'status': 'Cancelled'});
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Job cancelled')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error cancelling job: $e')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('My Jobs')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: _myJobs.isEmpty
-            ? const Center(child: Text('No assigned jobs yet'))
-            : ListView.builder(
-                itemCount: _myJobs.length,
-                itemBuilder: (context, index) {
-                  final job = _myJobs[index];
-                  return Card(
-                    child: ListTile(
-                      title: Text(job['title'] ?? 'No Title'),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(job['description'] ?? 'No Description'),
-                          const SizedBox(height: 5),
-                          Text("Status: ${job['status']}", style: const TextStyle(color: Colors.blue)),
-                        ],
+      appBar: AppBar(title: const Text('My Posted Jobs')),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('jobs')
+            .where('clientId', isEqualTo: clientId)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) return const Center(child: Text('No jobs posted.'));
+
+          return ListView(
+            children: snapshot.data!.docs.map((doc) {
+              var data = doc.data() as Map<String, dynamic>;
+              return Card(
+                child: ListTile(
+                  title: Text(data['title']),
+                  subtitle: Text(data['description']),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ViewJobApplicationsWidget(
+                          jobId: doc.id,
+                          clientId: clientId,
+                          jobTitle: data['title'],
+                          jobDescription: data['description'],
+                          jobStatus: data['status'],
+                        ),
                       ),
-                    ),
-                  );
-                },
-              ),
+                    );
+                  },
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () => _deleteJob(context, doc.id),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          );
+        },
       ),
     );
   }
