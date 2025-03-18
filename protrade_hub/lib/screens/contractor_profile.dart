@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../widgets/view_jobs_widget.dart';
-import '../widgets/manage_availability_widget.dart';
-import '../widgets/manage_specializations_widget.dart';
-import '../widgets/manage_portfolio_widget.dart';
+import '../widgets/contractor_widgets.dart';
+import '../widgets/shared_widgets.dart';
 
 class ContractorProfilePage extends StatefulWidget {
   const ContractorProfilePage({super.key});
@@ -15,11 +12,14 @@ class ContractorProfilePage extends StatefulWidget {
 
 class _ContractorProfilePageState extends State<ContractorProfilePage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  String _contractorName = "Contractor Name";
-  String _email = "No Email";
-  String _phone = "No Phone Number";
+  int _currentIndex = 0; // Controls BottomNavigationBar index
+  late String contractorId;
+
+  // Placeholder profile info
+  String _name = '';
+  String _email = '';
+  String _phone = '';
   List<String> _availability = [];
   List<String> _specializations = [];
   List<String> _portfolio = [];
@@ -27,191 +27,93 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
   @override
   void initState() {
     super.initState();
+    contractorId = _auth.currentUser!.uid;
     _fetchContractorProfile();
   }
 
-  // Fetches contractor profile details from Firestore
   void _fetchContractorProfile() async {
-    String? contractorId = _auth.currentUser?.uid;
-    if (contractorId == null) return;
-
-    DocumentSnapshot doc =
-        await _firestore.collection("contractor_profiles").doc(contractorId).get();
-
-    if (doc.exists && doc.data() != null) {
-      setState(() {
-        _contractorName = doc["fullName"] ?? "Contractor Name";
-        _email = doc["email"] ?? "No Email";
-        _phone = doc["phoneNumber"] ?? "No Phone Number";
-        _availability = List<String>.from(doc["availability"] ?? []);
-        _specializations = List<String>.from(doc["specializations"] ?? []);
-        _portfolio = List<String>.from(doc["portfolio"] ?? []);
-      });
-    }
+    // Fetch data logic (implement as needed from Firestore)
+    setState(() {
+      _name = 'Contractor Name';
+      _email = 'contractor@example.com';
+      _phone = '+1234567890';
+    });
   }
 
-  // Updates Firestore when availability is changed
-  void _updateAvailabilityInFirestore() {
-    String? contractorId = _auth.currentUser?.uid;
-    if (contractorId != null) {
-      _firestore.collection("contractor_profiles").doc(contractorId).update({
-        "availability": _availability,
-      });
-    }
-  }
-
-  // Updates Firestore when specializations are changed
-  void _updateSpecializationsInFirestore() {
-    String? contractorId = _auth.currentUser?.uid;
-    if (contractorId != null) {
-      _firestore.collection("contractor_profiles").doc(contractorId).update({
-        "specializations": _specializations,
-      });
-    }
-  }
-
-  // Updates Firestore when portfolio is changed
-  void _updatePortfolioInFirestore() {
-    String? contractorId = _auth.currentUser?.uid;
-    if (contractorId != null) {
-      _firestore.collection("contractor_profiles").doc(contractorId).update({
-        "portfolio": _portfolio,
-      });
-    }
-  }
+  final List<Widget> _tabs = [];
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Contractor Profile")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // Profile Info
-            Row(
-              children: [
-                const CircleAvatar(
-                  radius: 40,
-                  backgroundImage: NetworkImage('https://via.placeholder.com/150'),
-                ),
-                const SizedBox(width: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(_contractorName, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                    Text(_email),
-                    Text(_phone),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-
-            // View Available Jobs Button
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ViewJobsWidget()),
-                );
-              },
-              icon: const Icon(Icons.work),
-              label: const Text('View Available Jobs'),
-            ),
-          ],
-        ),
+    _tabs.clear();
+    _tabs.addAll([
+      ContractorProfileOverview(
+        name: _name,
+        email: _email,
+        phone: _phone,
+        contractorId: contractorId,
       ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            // Manage Availability
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ManageAvailabilityWidget(
-                      availability: _availability, 
-                      onAvailabilityAdded: (newAvailability) {
-                        setState(() {
-                          _availability.add(newAvailability);
-                        });
-                        _updateAvailabilityInFirestore();
-                      },
-                      onAvailabilityRemoved: (removedAvailability) {
-                        setState(() {
-                          _availability.remove(removedAvailability);
-                        });
-                        _updateAvailabilityInFirestore();
-                      },
-                    ),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.schedule),
-              label: const Text('Availability'),
-            ),
+      ManageAvailabilityWidget(
+        availability: _availability,
+        onAvailabilityAdded: (newAvailability) {
+          setState(() {
+            _availability = newAvailability;
+          });
+        },
+        contractorId: contractorId,
+      ),
+      ManageSpecializationsWidget(
+        specializations: _specializations,
+        onSpecializationAdded: (newSpecializations) {
+          setState(() {
+            _specializations = newSpecializations;
+          });
+        },
+        contractorId: contractorId,
+      ),
+      ManagePortfolioWidget(
+        portfolio: _portfolio,
+        onPortfolioAdded: (newPortfolio) {
+          setState(() {
+            _portfolio = newPortfolio;
+          });
+        },
+        contractorId: contractorId,
+      ),
+      ViewMyJobsWidget(contractorId: contractorId),
+    ]);
 
-            // Manage Specializations
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ManageSpecializationsWidget(
-                      specializations: _specializations, 
-                      onSpecializationAdded: (newSpecialization) {
-                        setState(() {
-                          _specializations.add(newSpecialization);
-                        });
-                        _updateSpecializationsInFirestore();
-                      },
-                      onSpecializationRemoved: (removedSpecialization) {
-                        setState(() {
-                          _specializations.remove(removedSpecialization);
-                        });
-                        _updateSpecializationsInFirestore();
-                      },
-                    ),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.build),
-              label: const Text('Specializations'),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Contractor Profile'),
+        automaticallyImplyLeading: false,
+      ),
+      body: _tabs[_currentIndex],
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ViewJobsWidget(contractorId: contractorId),
             ),
-
-            // Manage Portfolio
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ManagePortfolioWidget(
-                      portfolio: _portfolio, 
-                      onPortfolioAdded: (newPortfolioItem) {
-                        setState(() {
-                          _portfolio.add(newPortfolioItem);
-                        });
-                        _updatePortfolioInFirestore();
-                      },
-                      onPortfolioRemoved: (removedPortfolioItem) {
-                        setState(() {
-                          _portfolio.remove(removedPortfolioItem);
-                        });
-                        _updatePortfolioInFirestore();
-                      },
-                    ),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.image),
-              label: const Text('Portfolio'),
-            ),
-          ],
-        ),
+          );
+        },
+        child: const Icon(Icons.work),
+        tooltip: 'View Available Jobs',
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Overview'),
+          BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: 'Availability'),
+          BottomNavigationBarItem(icon: Icon(Icons.build), label: 'Specializations'),
+          BottomNavigationBarItem(icon: Icon(Icons.photo), label: 'Portfolio'),
+          BottomNavigationBarItem(icon: Icon(Icons.check_circle), label: 'My Jobs'),
+        ],
       ),
     );
   }

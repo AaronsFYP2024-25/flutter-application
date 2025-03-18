@@ -31,7 +31,7 @@ class TradeSoftwareApp extends StatelessWidget {
         '/': (context) => LoginPage(),
         '/contractorProfile': (context) => const ContractorProfilePage(),
         '/adminDashboard': (context) => const AdminDashboard(),
-        '/clientProfile': (context) => const ClientProfilePage(),
+        '/clientProfile': (context) => const ClientProfilePageWrapper(),
       },
     );
   } //end of build
