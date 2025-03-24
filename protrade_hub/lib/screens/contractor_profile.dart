@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/contractor_widgets.dart';
 import '../widgets/shared_widgets.dart';
 
@@ -12,14 +13,15 @@ class ContractorProfilePage extends StatefulWidget {
 
 class _ContractorProfilePageState extends State<ContractorProfilePage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  int _currentIndex = 0; // Controls BottomNavigationBar index
+  int _currentIndex = 0;
   late String contractorId;
+  String _name = 'Loading...';
+  String _email = 'Loading...';
+  String _phone = 'Loading...';
+  String _profilePicUrl = '';
 
-  // Placeholder profile info
-  String _name = '';
-  String _email = '';
-  String _phone = '';
   List<String> _availability = [];
   List<String> _specializations = [];
   List<String> _portfolio = [];
@@ -32,12 +34,24 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
   }
 
   void _fetchContractorProfile() async {
-    // Fetch data logic (implement as needed from Firestore)
-    setState(() {
-      _name = 'Contractor Name';
-      _email = 'contractor@example.com';
-      _phone = '+1234567890';
-    });
+    try {
+      var doc = await _firestore.collection('contractor_profiles').doc(contractorId).get();
+
+      if (doc.exists) {
+        setState(() {
+          _name = doc['name'] ?? 'No Name';
+          _email = doc['email'] ?? 'No Email';
+          _phone = doc['phone'] ?? 'No Phone';
+          _profilePicUrl = doc['profilePicUrl'] ?? '';
+
+          _availability = List<String>.from(doc['availability'] ?? []);
+          _specializations = List<String>.from(doc['specializations'] ?? []);
+          _portfolio = List<String>.from(doc['portfolio'] ?? []);
+        });
+      }
+    } catch (e) {
+      print('Error fetching profile: $e');
+    }
   }
 
   final List<Widget> _tabs = [];
@@ -51,30 +65,31 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
         email: _email,
         phone: _phone,
         contractorId: contractorId,
+        profilePicUrl: _profilePicUrl,
       ),
       ManageAvailabilityWidget(
         availability: _availability,
-        onAvailabilityAdded: (newAvailability) {
+        onAvailabilityAdded: (newList) {
           setState(() {
-            _availability = newAvailability;
+            _availability = newList;
           });
         },
         contractorId: contractorId,
       ),
       ManageSpecializationsWidget(
         specializations: _specializations,
-        onSpecializationAdded: (newSpecializations) {
+        onSpecializationAdded: (newList) {
           setState(() {
-            _specializations = newSpecializations;
+            _specializations = newList;
           });
         },
         contractorId: contractorId,
       ),
       ManagePortfolioWidget(
         portfolio: _portfolio,
-        onPortfolioAdded: (newPortfolio) {
+        onPortfolioAdded: (newList) {
           setState(() {
-            _portfolio = newPortfolio;
+            _portfolio = newList;
           });
         },
         contractorId: contractorId,
@@ -84,7 +99,18 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Contractor Profile'),
+        title: Row(
+          children: [
+            CircleAvatar(
+              radius: 20,
+              backgroundImage: _profilePicUrl.isNotEmpty
+                  ? NetworkImage(_profilePicUrl)
+                  : const NetworkImage('https://via.placeholder.com/150'),
+            ),
+            const SizedBox(width: 12),
+            Text(_name),
+          ],
+        ),
         automaticallyImplyLeading: false,
       ),
       body: _tabs[_currentIndex],
@@ -101,7 +127,10 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
         tooltip: 'View Available Jobs',
       ),
       bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: Colors.blueGrey[50],
         currentIndex: _currentIndex,
+        selectedItemColor: Colors.blueAccent,
+        unselectedItemColor: Colors.grey,
         onTap: (index) {
           setState(() {
             _currentIndex = index;

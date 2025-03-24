@@ -408,3 +408,63 @@ class ContractorProfileViewWidget extends StatelessWidget {
   }
 }
 
+
+
+// ClientJobsWidget - Displays jobs posted by the client
+class ClientJobsWidget extends StatelessWidget {
+  final String clientId;
+
+  const ClientJobsWidget({super.key, required this.clientId});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder(
+      stream: FirebaseFirestore.instance
+          .collection('jobs')
+          .where('clientId', isEqualTo: clientId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        var jobs = snapshot.data!.docs;
+
+        if (jobs.isEmpty) {
+          return const Center(child: Text('No jobs posted yet.'));
+        }
+
+        return ListView.builder(
+          itemCount: jobs.length,
+          itemBuilder: (context, index) {
+            var job = jobs[index].data();
+            var jobId = jobs[index].id;
+
+            return Card(
+              child: ListTile(
+                title: Text('Title: ${job['title']}'),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Description: ${job['description']}'),
+                    Text('Status: ${job['status']}'),
+                  ],
+                ),
+                onTap: () {
+                  // Navigate to job details page
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => JobDetailsPage(jobId: jobId),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+

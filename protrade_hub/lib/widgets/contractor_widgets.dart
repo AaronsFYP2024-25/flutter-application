@@ -10,13 +10,15 @@ class ContractorProfileOverview extends StatelessWidget {
   final String email;
   final String phone;
   final String contractorId;
-
+  final String profilePicUrl;
+  
   const ContractorProfileOverview({
     super.key,
     required this.name,
     required this.email,
     required this.phone,
     required this.contractorId,
+    required this.profilePicUrl,
   });
 
   @override

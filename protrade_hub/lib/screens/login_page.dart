@@ -56,7 +56,7 @@ class _LoginPageState extends State<LoginPage> {
         if (clientDoc.exists && clientDoc['role'] == 'client') {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const ClientProfilePageWrapper()),
+            MaterialPageRoute(builder: (context) => const ClientProfilePage()),
           );
           return;
         }
