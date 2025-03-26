@@ -20,6 +20,7 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
   String _name = 'Loading...';
   String _email = 'Loading...';
   String _phone = 'Loading...';
+  String _county = 'Loading...';
   String _profilePicUrl = '';
 
   List<String> _availability = [];
@@ -42,6 +43,7 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
           _name = doc['name'] ?? 'No Name';
           _email = doc['email'] ?? 'No Email';
           _phone = doc['phone'] ?? 'No Phone';
+          _county = doc['county'] ?? 'No County';
           _profilePicUrl = doc['profilePicUrl'] ?? '';
 
           _availability = List<String>.from(doc['availability'] ?? []);
@@ -60,12 +62,24 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
   Widget build(BuildContext context) {
     _tabs.clear();
     _tabs.addAll([
-      ContractorProfileOverview(
-        name: _name,
-        email: _email,
-        phone: _phone,
-        contractorId: contractorId,
-        profilePicUrl: _profilePicUrl,
+      SingleChildScrollView(
+        child: Column(
+          children: [
+            const SizedBox(height: 16),
+            CircleAvatar(
+              radius: 50,
+              backgroundImage: _profilePicUrl.isNotEmpty
+                  ? NetworkImage(_profilePicUrl)
+                  : const NetworkImage('https://via.placeholder.com/150'),
+            ),
+            const SizedBox(height: 12),
+            Text(_name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text(_email),
+            Text(_phone),
+            Text('County: $_county'),
+          ],
+        ),
       ),
       ManageAvailabilityWidget(
         availability: _availability,
