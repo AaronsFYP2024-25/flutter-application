@@ -214,9 +214,9 @@ class _PostJobWidgetState extends State<PostJobWidget> {
               Wrap(
                 spacing: 10,
                 children: _selectedImages
-                    .map((img) => Stack(
-                          children: [
-                            Image.file(img, width: 80, height: 80, fit: BoxFit.cover),
+                    .map<Widget>((img) => Stack(
+                          children: [   
+                            Image.memory(img.readAsBytesSync(), width: 80, height: 80, fit: BoxFit.cover),
                             Positioned(
                               top: -6,
                               right: -6,
