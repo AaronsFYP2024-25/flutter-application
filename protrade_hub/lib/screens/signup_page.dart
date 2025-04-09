@@ -75,14 +75,12 @@ class _SignUpPageState extends State<SignUpPage> {
 
         String uid = userCredential.user!.uid;
 
-        // Upload profile picture if selected
         if (_selectedImage != null) {
           _profilePicUrl = await _uploadProfilePic(uid);
         } else if (_profilePicUrl.isEmpty) {
-          _profilePicUrl = _presetPics[0]; // default preset if nothing selected
+          _profilePicUrl = _presetPics[0];
         }
 
-        // Save to Firestore
         if (_role == 'contractor') {
           await _firestore.collection('contractor_profiles').doc(uid).set({
             'name': _nameController.text.trim(),
@@ -127,18 +125,21 @@ class _SignUpPageState extends State<SignUpPage> {
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(labelText: 'Name'),
+                style: Theme.of(context).textTheme.bodyMedium,
                 validator: (value) => value == null || value.isEmpty ? 'Enter name' : null,
               ),
               const SizedBox(height: 10),
               TextFormField(
                 controller: _emailController,
                 decoration: const InputDecoration(labelText: 'Email'),
+                style: Theme.of(context).textTheme.bodyMedium,
                 validator: (value) => value == null || value.isEmpty ? 'Enter email' : null,
               ),
               const SizedBox(height: 10),
               TextFormField(
                 controller: _phoneController,
                 decoration: const InputDecoration(labelText: 'Phone Number'),
+                style: Theme.of(context).textTheme.bodyMedium,
                 validator: (value) => value == null || value.isEmpty ? 'Enter phone number' : null,
               ),
               const SizedBox(height: 10),
@@ -179,6 +180,7 @@ class _SignUpPageState extends State<SignUpPage> {
                 controller: _passwordController,
                 decoration: const InputDecoration(labelText: 'Password'),
                 obscureText: true,
+                style: Theme.of(context).textTheme.bodyMedium,
                 validator: (value) => value == null || value.isEmpty ? 'Enter password' : null,
               ),
               const SizedBox(height: 10),
@@ -186,6 +188,7 @@ class _SignUpPageState extends State<SignUpPage> {
                 controller: _confirmPasswordController,
                 decoration: const InputDecoration(labelText: 'Confirm Password'),
                 obscureText: true,
+                style: Theme.of(context).textTheme.bodyMedium,
                 validator: (value) => value == null || value.isEmpty ? 'Confirm your password' : null,
               ),
               const SizedBox(height: 10),

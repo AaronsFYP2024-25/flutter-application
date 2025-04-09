@@ -477,25 +477,30 @@ class ContractorProfileViewWidget extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: ListView(
               children: [
-                Text('Name: $name', style: const TextStyle(fontWeight: FontWeight.bold)),
-                Text('Email: $email'),
-                Text('Phone: $phone'),
+                Text('Name: $name', style: Theme.of(context).textTheme.titleMedium),
+                Text('Email: $email', style: Theme.of(context).textTheme.bodyMedium),
+                Text('Phone: $phone', style: Theme.of(context).textTheme.bodyMedium),
                 const SizedBox(height: 10),
-                const Text('Specializations:', style: TextStyle(fontWeight: FontWeight.bold)),
-                ...specializations.map<Widget>((s) => Text('- $s')).toList(),
+                Text('Specializations:', style: Theme.of(context).textTheme.titleSmall),
+                if (specializations.isEmpty)
+                  const Text('No specializations listed.'),
+                ...specializations.map<Widget>((s) => Text('- $s', style: Theme.of(context).textTheme.bodySmall)).toList(),
                 const SizedBox(height: 10),
-                const Text('Availability:', style: TextStyle(fontWeight: FontWeight.bold)),
-                ...availability.map<Widget>((a) => Text('- $a')).toList(),
+                Text('Availability:', style: Theme.of(context).textTheme.titleSmall),
+                if (availability.isEmpty)
+                  const Text('No availability listed.'),
+                ...availability.map<Widget>((a) => Text('- $a', style: Theme.of(context).textTheme.bodySmall)).toList(),
                 const SizedBox(height: 10),
-                const Text('Portfolio:', style: TextStyle(fontWeight: FontWeight.bold)),
-                ...portfolio.map<Widget>((p) => Text('- $p')).toList(),
+                Text('Portfolio:', style: Theme.of(context).textTheme.titleSmall),
+                if (portfolio.isEmpty)
+                  const Text('No portfolio items.'),
+                ...portfolio.map<Widget>((p) => Text('- $p', style: Theme.of(context).textTheme.bodySmall)).toList(),
                 const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     ElevatedButton(
                       onPressed: () {
-                        // Accept application logic
                         Navigator.pop(context, 'accepted');
                       },
                       child: const Text('Accept'),
@@ -503,7 +508,6 @@ class ContractorProfileViewWidget extends StatelessWidget {
                     const SizedBox(width: 10),
                     ElevatedButton(
                       onPressed: () {
-                        // Deny application logic
                         Navigator.pop(context, 'denied');
                       },
                       child: const Text('Deny'),
@@ -518,7 +522,6 @@ class ContractorProfileViewWidget extends StatelessWidget {
     );
   }
 }
-
 
 
 // ClientJobsWidget - Displays jobs posted by the client

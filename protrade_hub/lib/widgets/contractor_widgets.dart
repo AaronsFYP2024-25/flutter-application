@@ -368,19 +368,36 @@ class ViewMyJobsWidget extends StatelessWidget {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
-          var jobs = snapshot.data!.docs;
-          if (jobs.isEmpty) {
+          var applications = snapshot.data!.docs;
+          if (applications.isEmpty) {
             return const Center(child: Text('No Accepted Jobs.'));
           }
           return ListView.builder(
-            itemCount: jobs.length,
+            itemCount: applications.length,
             itemBuilder: (context, index) {
-              var job = jobs[index].data() as Map<String, dynamic>;
-              return Card(
-                child: ListTile(
-                  title: Text(job['jobTitle'] ?? 'No Title'),
-                  subtitle: Text('Status: ${job['status']}'),
-                ),
+              var application = applications[index].data() as Map<String, dynamic>;
+              String jobId = application['jobId'];
+
+              return FutureBuilder<DocumentSnapshot>(
+                future: FirebaseFirestore.instance.collection('jobs').doc(jobId).get(),
+                builder: (context, jobSnapshot) {
+                  if (!jobSnapshot.hasData || !jobSnapshot.data!.exists) {
+                    return const ListTile(title: Text('Loading job info...'));
+                  }
+                  var jobData = jobSnapshot.data!.data() as Map<String, dynamic>;
+                  return Card(
+                    child: ListTile(
+                      title: Text(jobData['title'] ?? 'No Title'),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('County: ${jobData['county'] ?? 'Unknown'}'),
+                          Text('Status: ${application['status']}'),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               );
             },
           );
