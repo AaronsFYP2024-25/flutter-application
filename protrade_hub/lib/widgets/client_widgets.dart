@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:io'; // for File
+import 'package:image_picker/image_picker.dart'; // for ImagePicker
+import 'package:firebase_storage/firebase_storage.dart'; // for FirebaseStorage
 
 /// ================= CLIENT PROFILE PAGE =================
 class ClientProfilePage extends StatefulWidget {
@@ -75,29 +78,89 @@ class _ClientProfilePageState extends State<ClientProfilePage> {
   }
 }
 
-/// ================= POST JOB WIDGET =================
+/// ================= POST JOB WIDGET ================
+
 class PostJobWidget extends StatefulWidget {
   final String clientId;
   const PostJobWidget({super.key, required this.clientId});
 
   @override
-  _PostJobWidgetState createState() => _PostJobWidgetState();
+  State<PostJobWidget> createState() => _PostJobWidgetState();
 }
 
 class _PostJobWidgetState extends State<PostJobWidget> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
+  String _jobType = 'Plumbing';
+  String _county = 'Antrim';
+  List<File> _selectedImages = [];
+  bool _isSubmitting = false;
+
+  final List<String> _jobTypes = [
+    'Plumbing', 'Electrical', 'Painting', 'Cleaning', 'Roofing', 'Flooring', 'Gardening',
+    'Tiling', 'Carpentry', 'Plastering', 'Locksmith', 'Landscaping', 'Window Cleaning',
+    'Moving Help', 'Handyman', 'Masonry', 'Furniture Assembly', 'Pest Control', 'Security Systems', 'Other'
+  ];
+
+  final List<String> _counties = [
+    'Antrim', 'Armagh', 'Carlow', 'Cavan', 'Clare', 'Cork', 'Derry', 'Donegal', 'Down',
+    'Dublin', 'Fermanagh', 'Galway', 'Kerry', 'Kildare', 'Kilkenny', 'Laois', 'Leitrim',
+    'Limerick', 'Longford', 'Louth', 'Mayo', 'Meath', 'Monaghan', 'Offaly', 'Roscommon',
+    'Sligo', 'Tipperary', 'Tyrone', 'Waterford', 'Westmeath', 'Wexford', 'Wicklow'
+  ];
+
+  Future<void> _pickImages() async {
+    final picker = ImagePicker();
+    final pickedFiles = await picker.pickMultiImage();
+    if (pickedFiles.length + _selectedImages.length > 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You can only upload up to 6 images.')),
+      );
+      return;
+    }
+    setState(() {
+      _selectedImages.addAll(pickedFiles.map((e) => File(e.path)));
+    });
+  }
+
+  Future<List<String>> _uploadImages(String jobId) async {
+    List<String> urls = [];
+    for (int i = 0; i < _selectedImages.length; i++) {
+      final ref = FirebaseStorage.instance.ref().child('job_images/$jobId/img_$i.jpg');
+      await ref.putFile(_selectedImages[i]);
+      String url = await ref.getDownloadURL();
+      urls.add(url);
+    }
+    return urls;
+  }
 
   Future<void> _submitJob() async {
-    if (_formKey.currentState!.validate()) {
-      await FirebaseFirestore.instance.collection('jobs').add({
-        'title': _titleController.text.trim(),
-        'description': _descriptionController.text.trim(),
-        'status': 'Open',
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isSubmitting = true);
+    try {
+      DocumentReference jobRef = FirebaseFirestore.instance.collection('jobs').doc();
+
+      List<String> imageUrls = await _uploadImages(jobRef.id);
+
+      await jobRef.set({
         'clientId': widget.clientId,
+        'title': _titleController.text.trim(),
+        'jobType': _jobType,
+        'description': _descriptionController.text.trim(),
+        'county': _county,
+        'imageUrls': imageUrls,
+        'status': 'Open',
+        'createdAt': Timestamp.now(),
       });
+
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Job posted successfully.')));
       Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    } finally {
+      setState(() => _isSubmitting = false);
     }
   }
 
@@ -114,20 +177,69 @@ class _PostJobWidgetState extends State<PostJobWidget> {
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(labelText: 'Job Title'),
-                validator: (value) => value == null || value.trim().isEmpty ? 'Enter title' : null,
+                validator: (val) => val == null || val.isEmpty ? 'Enter a job title' : null,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
+              DropdownButtonFormField<String>(
+                value: _jobType,
+                items: _jobTypes.map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
+                onChanged: (val) => setState(() => _jobType = val!),
+                decoration: const InputDecoration(labelText: 'Job Type'),
+              ),
+              const SizedBox(height: 10),
               TextFormField(
                 controller: _descriptionController,
-                maxLines: 5,
-                decoration: const InputDecoration(labelText: 'Job Description'),
-                validator: (value) => value == null || value.trim().isEmpty ? 'Enter description' : null,
+                maxLines: 6,
+                maxLength: 1500,
+                decoration: const InputDecoration(
+                  labelText: 'Job Description',
+                  alignLabelWithHint: true,
+                  border: OutlineInputBorder(),
+                ),
+                validator: (val) => val == null || val.isEmpty ? 'Enter a job description' : null,
+              ),
+              const SizedBox(height: 10),
+              DropdownButtonFormField<String>(
+                value: _county,
+                items: _counties.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                onChanged: (val) => setState(() => _county = val!),
+                decoration: const InputDecoration(labelText: 'County'),
               ),
               const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _submitJob,
-                child: const Text('Post Job'),
+              ElevatedButton.icon(
+                onPressed: _pickImages,
+                icon: const Icon(Icons.image),
+                label: const Text('Upload Images (max 6)'),
               ),
+              Wrap(
+                spacing: 10,
+                children: _selectedImages
+                    .map<Widget>((img) => Stack(
+                          children: [   
+                            Image.memory(img.readAsBytesSync(), width: 80, height: 80, fit: BoxFit.cover),
+                            Positioned(
+                              top: -6,
+                              right: -6,
+                              child: IconButton(
+                                icon: const Icon(Icons.cancel, size: 18, color: Colors.red),
+                                onPressed: () {
+                                  setState(() {
+                                    _selectedImages.remove(img);
+                                  });
+                                },
+                              ),
+                            ),
+                          ],
+                        ))
+                    .toList(),
+              ),
+              const SizedBox(height: 20),
+              _isSubmitting
+                  ? const Center(child: CircularProgressIndicator())
+                  : ElevatedButton(
+                      onPressed: _submitJob,
+                      child: const Text('Submit Job'),
+                    ),
             ],
           ),
         ),
@@ -135,7 +247,6 @@ class _PostJobWidgetState extends State<PostJobWidget> {
     );
   }
 }
-
 /// ================= EDIT JOB WIDGET =================
 class EditJobWidget extends StatefulWidget {
   final String jobId;

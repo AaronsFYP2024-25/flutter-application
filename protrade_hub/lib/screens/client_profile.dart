@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/client_widgets.dart';
-import '../widgets/shared_widgets.dart'; // Import your shared widgets (where PostJobWidget is)
+import '../widgets/shared_widgets.dart';
 
 class ClientProfilePage extends StatefulWidget {
   const ClientProfilePage({super.key});
@@ -17,6 +17,8 @@ class _ClientProfilePageState extends State<ClientProfilePage> {
   late String clientId;
   String _name = 'Loading...';
   String _email = 'Loading...';
+  String _phone = 'Loading...';
+  String _county = 'Loading...';
   String _profilePicUrl = '';
 
   @override
@@ -34,6 +36,8 @@ class _ClientProfilePageState extends State<ClientProfilePage> {
         setState(() {
           _name = doc['name'] ?? 'Client Name';
           _email = doc['email'] ?? 'client@example.com';
+          _phone = doc['phone'] ?? 'No Phone';
+          _county = doc['county'] ?? 'No County';
           _profilePicUrl = doc.data()?.containsKey('profilePicUrl') == true ? doc['profilePicUrl'] : '';
         });
       }
@@ -45,29 +49,42 @@ class _ClientProfilePageState extends State<ClientProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(
-              radius: 20,
-              backgroundImage: _profilePicUrl.isNotEmpty
-                  ? NetworkImage(_profilePicUrl)
-                  : const NetworkImage('https://via.placeholder.com/150'),
+            const SizedBox(height: 16),
+            Center(
+              child: CircleAvatar(
+                radius: 50,
+                backgroundImage: _profilePicUrl.isNotEmpty
+                    ? NetworkImage(_profilePicUrl)
+                    : const NetworkImage('https://via.placeholder.com/150'),
+              ),
             ),
-            const SizedBox(width: 12),
-            Text(_name),
+            const SizedBox(height: 12),
+            Center(
+              child: Text(
+                _name,
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text('Email: $_email'),
+            Text('Phone: $_phone'),
+            Text('County: $_county'),
+            const SizedBox(height: 16),
+            Expanded(child: ClientJobsWidget(clientId: clientId)),
           ],
         ),
-        automaticallyImplyLeading: false,
       ),
-      body: ClientJobsWidget(clientId: clientId),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          // Navigate to Post Job page
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => PostJobWidget(clientId: clientId), // Make sure PostJobWidget is imported
+              builder: (context) => PostJobWidget(clientId: clientId),
             ),
           );
         },
