@@ -3,7 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:file_picker/file_picker.dart';
 import '../widgets/shared_widgets.dart';
-
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io';
 /// ================= CONTRACTOR PROFILE OVERVIEW =================
 class ContractorProfileOverview extends StatelessWidget {
   final String name;
@@ -45,7 +46,7 @@ class ContractorProfileOverview extends StatelessWidget {
 /// ================= MANAGE AVAILABILITY WIDGET =================
 class ManageAvailabilityWidget extends StatefulWidget {
   final List<String> availability;
-  final ValueChanged<List<String>> onAvailabilityAdded;
+  final Function(List<String>) onAvailabilityAdded;
   final String contractorId;
 
   const ManageAvailabilityWidget({
@@ -56,7 +57,7 @@ class ManageAvailabilityWidget extends StatefulWidget {
   });
 
   @override
-  _ManageAvailabilityWidgetState createState() => _ManageAvailabilityWidgetState();
+  State<ManageAvailabilityWidget> createState() => _ManageAvailabilityWidgetState();
 }
 
 class _ManageAvailabilityWidgetState extends State<ManageAvailabilityWidget> {
@@ -68,18 +69,28 @@ class _ManageAvailabilityWidgetState extends State<ManageAvailabilityWidget> {
     _availabilityList = List.from(widget.availability);
   }
 
-  void _addAvailability(String availability) {
+  void _addAvailability(String availability) async {
     setState(() {
       _availabilityList.add(availability);
     });
     widget.onAvailabilityAdded(_availabilityList);
+
+    await FirebaseFirestore.instance
+        .collection('contractor_profiles')
+        .doc(widget.contractorId)
+        .update({'availability': _availabilityList});
   }
 
-  void _removeAvailability(int index) {
+  void _removeAvailability(int index) async {
     setState(() {
       _availabilityList.removeAt(index);
     });
     widget.onAvailabilityAdded(_availabilityList);
+
+    await FirebaseFirestore.instance
+        .collection('contractor_profiles')
+        .doc(widget.contractorId)
+        .update({'availability': _availabilityList});
   }
 
   @override
@@ -134,7 +145,7 @@ class _ManageAvailabilityWidgetState extends State<ManageAvailabilityWidget> {
 /// ================= MANAGE SPECIALIZATIONS WIDGET =================
 class ManageSpecializationsWidget extends StatefulWidget {
   final List<String> specializations;
-  final ValueChanged<List<String>> onSpecializationAdded;
+  final Function(List<String>) onSpecializationAdded;
   final String contractorId;
 
   const ManageSpecializationsWidget({
@@ -145,7 +156,7 @@ class ManageSpecializationsWidget extends StatefulWidget {
   });
 
   @override
-  _ManageSpecializationsWidgetState createState() => _ManageSpecializationsWidgetState();
+  State<ManageSpecializationsWidget> createState() => _ManageSpecializationsWidgetState();
 }
 
 class _ManageSpecializationsWidgetState extends State<ManageSpecializationsWidget> {
@@ -157,20 +168,29 @@ class _ManageSpecializationsWidgetState extends State<ManageSpecializationsWidge
     _specializationList = List.from(widget.specializations);
   }
 
-  void _addSpecialization(String specialization) {
+  void _addSpecialization(String specialization) async {
     setState(() {
       _specializationList.add(specialization);
     });
     widget.onSpecializationAdded(_specializationList);
+
+    await FirebaseFirestore.instance
+        .collection('contractor_profiles')
+        .doc(widget.contractorId)
+        .update({'specializations': _specializationList});
   }
 
-  void _removeSpecialization(int index) {
+  void _removeSpecialization(int index) async {
     setState(() {
       _specializationList.removeAt(index);
     });
     widget.onSpecializationAdded(_specializationList);
-  }
 
+    await FirebaseFirestore.instance
+        .collection('contractor_profiles')
+        .doc(widget.contractorId)
+        .update({'specializations': _specializationList});
+  }
   @override
   Widget build(BuildContext context) {
     final TextEditingController _specializationController = TextEditingController();
@@ -223,7 +243,7 @@ class _ManageSpecializationsWidgetState extends State<ManageSpecializationsWidge
 /// ================= MANAGE PORTFOLIO WIDGET =================
 class ManagePortfolioWidget extends StatefulWidget {
   final List<String> portfolio;
-  final ValueChanged<List<String>> onPortfolioAdded;
+  final Function(List<String>) onPortfolioAdded;
   final String contractorId;
 
   const ManagePortfolioWidget({
@@ -234,7 +254,7 @@ class ManagePortfolioWidget extends StatefulWidget {
   });
 
   @override
-  _ManagePortfolioWidgetState createState() => _ManagePortfolioWidgetState();
+  State<ManagePortfolioWidget> createState() => _ManagePortfolioWidgetState();
 }
 
 class _ManagePortfolioWidgetState extends State<ManagePortfolioWidget> {
@@ -246,26 +266,41 @@ class _ManagePortfolioWidgetState extends State<ManagePortfolioWidget> {
     _portfolioList = List.from(widget.portfolio);
   }
 
-  void _addPortfolio(String fileName) {
-    setState(() {
-      _portfolioList.add(fileName);
-    });
-    widget.onPortfolioAdded(_portfolioList);
+  Future<void> _pickFile() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles();
+
+    if (result != null) {
+      File file = File(result.files.single.path!);
+      String fileName = result.files.single.name;
+      String filePath = 'portfolio/${widget.contractorId}/$fileName';
+
+      UploadTask uploadTask =
+          FirebaseStorage.instance.ref().child(filePath).putFile(file);
+      TaskSnapshot snapshot = await uploadTask;
+      String downloadUrl = await snapshot.ref.getDownloadURL();
+
+      setState(() {
+        _portfolioList.add(downloadUrl);
+      });
+      widget.onPortfolioAdded(_portfolioList);
+
+      await FirebaseFirestore.instance
+          .collection('contractor_profiles')
+          .doc(widget.contractorId)
+          .update({'portfolio': _portfolioList});
+    }
   }
 
-  void _removePortfolio(int index) {
+  void _removePortfolio(int index) async {
     setState(() {
       _portfolioList.removeAt(index);
     });
     widget.onPortfolioAdded(_portfolioList);
-  }
 
-  Future<void> _pickFile() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles();
-    if (result != null) {
-      String fileName = result.files.single.name;
-      _addPortfolio(fileName);
-    }
+    await FirebaseFirestore.instance
+        .collection('contractor_profiles')
+        .doc(widget.contractorId)
+        .update({'portfolio': _portfolioList});
   }
 
   @override
