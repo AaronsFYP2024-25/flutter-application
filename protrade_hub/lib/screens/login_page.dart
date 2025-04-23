@@ -86,6 +86,7 @@ class _LoginPageState extends State<LoginPage> {
               TextFormField(
                 controller: _emailController,
                 decoration: const InputDecoration(labelText: 'Email'),
+                style: Theme.of(context).textTheme.bodyMedium,
                 validator: (value) => value == null || value.isEmpty ? 'Enter email' : null,
               ),
               const SizedBox(height: 10),
@@ -93,6 +94,7 @@ class _LoginPageState extends State<LoginPage> {
                 controller: _passwordController,
                 decoration: const InputDecoration(labelText: 'Password'),
                 obscureText: true,
+                style: Theme.of(context).textTheme.bodyMedium,
                 validator: (value) => value == null || value.isEmpty ? 'Enter password' : null,
               ),
               const SizedBox(height: 20),
@@ -113,7 +115,10 @@ class _LoginPageState extends State<LoginPage> {
               if (_errorMessage.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: Text(_errorMessage, style: const TextStyle(color: Colors.red)),
+                  child: Text(
+                    _errorMessage,
+                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
                 ),
             ],
           ),

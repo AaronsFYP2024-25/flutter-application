@@ -73,11 +73,23 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
                   : const NetworkImage('https://via.placeholder.com/150'),
             ),
             const SizedBox(height: 12),
-            Text(_name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(
+              _name,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: 4),
-            Text(_email),
-            Text(_phone),
-            Text('County: $_county'),
+            Text(
+              _email,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            Text(
+              _phone,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            Text(
+              'County: $_county',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
           ],
         ),
       ),
@@ -122,7 +134,10 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
                   : const NetworkImage('https://via.placeholder.com/150'),
             ),
             const SizedBox(width: 12),
-            Text(_name),
+            Text(
+              _name,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
           ],
         ),
         automaticallyImplyLeading: false,
@@ -141,9 +156,9 @@ class _ContractorProfilePageState extends State<ContractorProfilePage> {
         tooltip: 'View Available Jobs',
       ),
       bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.blueGrey[50],
+        backgroundColor: Theme.of(context).bottomNavigationBarTheme.backgroundColor ?? Theme.of(context).scaffoldBackgroundColor,
         currentIndex: _currentIndex,
-        selectedItemColor: Colors.blueAccent,
+        selectedItemColor: Theme.of(context).colorScheme.secondary,
         unselectedItemColor: Colors.grey,
         onTap: (index) {
           setState(() {

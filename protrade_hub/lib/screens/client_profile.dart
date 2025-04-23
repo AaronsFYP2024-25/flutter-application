@@ -67,13 +67,13 @@ class _ClientProfilePageState extends State<ClientProfilePage> {
             Center(
               child: Text(
                 _name,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.titleLarge,
               ),
             ),
             const SizedBox(height: 8),
-            Text('Email: $_email'),
-            Text('Phone: $_phone'),
-            Text('County: $_county'),
+            Text('Email: $_email', style: Theme.of(context).textTheme.bodyMedium),
+            Text('Phone: $_phone', style: Theme.of(context).textTheme.bodyMedium),
+            Text('County: $_county', style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 16),
             Expanded(child: ClientJobsWidget(clientId: clientId)),
           ],

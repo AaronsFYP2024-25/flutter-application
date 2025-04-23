@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:io'; // for File
 import 'package:image_picker/image_picker.dart'; // for ImagePicker
 import 'package:firebase_storage/firebase_storage.dart'; // for FirebaseStorage
@@ -396,12 +397,16 @@ class JobDetailsPage extends StatelessWidget {
 }
 
 /// ================= VIEW JOB APPLICATIONS WIDGET =================
+
 class ViewJobApplicationsWidget extends StatelessWidget {
   final String jobId;
+
   const ViewJobApplicationsWidget({super.key, required this.jobId});
 
   @override
   Widget build(BuildContext context) {
+    final String clientId = FirebaseAuth.instance.currentUser!.uid;
+
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('job_applications')
@@ -430,7 +435,11 @@ class ViewJobApplicationsWidget extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ContractorProfileViewWidget(contractorId: contractorId),
+                        builder: (context) => ContractorProfileViewWidget(
+                          contractorId: contractorId,
+                          jobId: jobId,
+                          clientId: clientId,
+                        ),
                       ),
                     );
                   },
@@ -444,14 +453,54 @@ class ViewJobApplicationsWidget extends StatelessWidget {
   }
 }
 
-/// ================= Contractor Profile View =================
+
+/// ================= CONTRACTOR PROFILE VIEW =================
+
 class ContractorProfileViewWidget extends StatelessWidget {
   final String contractorId;
+  final String jobId;
+  final String clientId;
 
-  const ContractorProfileViewWidget({super.key, required this.contractorId});
+  const ContractorProfileViewWidget({
+    super.key,
+    required this.contractorId,
+    required this.jobId,
+    required this.clientId,
+  });
 
-  Future<DocumentSnapshot> _fetchContractorProfile() {
-    return FirebaseFirestore.instance.collection('contractor_profiles').doc(contractorId).get();
+  Future<void> _handleDecision(BuildContext context, String decision) async {
+    try {
+      // Update job application status
+      var query = await FirebaseFirestore.instance
+          .collection('job_applications')
+          .where('jobId', isEqualTo: jobId)
+          .where('contractorId', isEqualTo: contractorId)
+          .limit(1)
+          .get();
+
+      if (query.docs.isNotEmpty) {
+        await query.docs.first.reference.update({'status': decision});
+      }
+
+      // Send message to contractor
+      await FirebaseFirestore.instance.collection('messages').add({
+        'jobId': jobId,
+        'senderId': clientId,
+        'receiverId': contractorId,
+        'text': 'Your application has been $decision.',
+        'timestamp': Timestamp.now(),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Application $decision')),
+      );
+
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
   }
 
   @override
@@ -459,7 +508,7 @@ class ContractorProfileViewWidget extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Contractor Profile')),
       body: FutureBuilder<DocumentSnapshot>(
-        future: _fetchContractorProfile(),
+        future: FirebaseFirestore.instance.collection('contractor_profiles').doc(contractorId).get(),
         builder: (context, snapshot) {
           if (!snapshot.hasData || !snapshot.data!.exists) {
             return const Center(child: Text('Loading profile...'));
@@ -477,35 +526,24 @@ class ContractorProfileViewWidget extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: ListView(
               children: [
-                Text('Name: $name', style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text('Name: $name', style: Theme.of(context).textTheme.titleMedium),
                 Text('Email: $email'),
                 Text('Phone: $phone'),
                 const SizedBox(height: 10),
-                const Text('Specializations:', style: TextStyle(fontWeight: FontWeight.bold)),
-                ...specializations.map<Widget>((s) => Text('- $s')).toList(),
-                const SizedBox(height: 10),
-                const Text('Availability:', style: TextStyle(fontWeight: FontWeight.bold)),
-                ...availability.map<Widget>((a) => Text('- $a')).toList(),
-                const SizedBox(height: 10),
-                const Text('Portfolio:', style: TextStyle(fontWeight: FontWeight.bold)),
-                ...portfolio.map<Widget>((p) => Text('- $p')).toList(),
+                Text('Specializations: ${specializations.join(', ')}'),
+                Text('Availability: ${availability.join(', ')}'),
+                Text('Portfolio: ${portfolio.join(', ')}'),
                 const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     ElevatedButton(
-                      onPressed: () {
-                        // Accept application logic
-                        Navigator.pop(context, 'accepted');
-                      },
+                      onPressed: () => _handleDecision(context, 'Accepted'),
                       child: const Text('Accept'),
                     ),
                     const SizedBox(width: 10),
                     ElevatedButton(
-                      onPressed: () {
-                        // Deny application logic
-                        Navigator.pop(context, 'denied');
-                      },
+                      onPressed: () => _handleDecision(context, 'Denied'),
                       child: const Text('Deny'),
                     ),
                   ],
@@ -518,8 +556,6 @@ class ContractorProfileViewWidget extends StatelessWidget {
     );
   }
 }
-
-
 
 // ClientJobsWidget - Displays jobs posted by the client
 class ClientJobsWidget extends StatelessWidget {
