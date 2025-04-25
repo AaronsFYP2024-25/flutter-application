@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:io'; // for File
 import 'package:image_picker/image_picker.dart'; // for ImagePicker
 import 'package:firebase_storage/firebase_storage.dart'; // for FirebaseStorage
+import '../widgets/shared_widgets.dart';
 
 /// ================= CLIENT PROFILE PAGE =================
 class ClientProfilePage extends StatefulWidget {
@@ -455,7 +456,6 @@ class ViewJobApplicationsWidget extends StatelessWidget {
 
 
 /// ================= CONTRACTOR PROFILE VIEW =================
-
 class ContractorProfileViewWidget extends StatelessWidget {
   final String contractorId;
   final String jobId;
@@ -470,7 +470,6 @@ class ContractorProfileViewWidget extends StatelessWidget {
 
   Future<void> _handleDecision(BuildContext context, String decision) async {
     try {
-      // Update job application status
       var query = await FirebaseFirestore.instance
           .collection('job_applications')
           .where('jobId', isEqualTo: jobId)
@@ -482,7 +481,6 @@ class ContractorProfileViewWidget extends StatelessWidget {
         await query.docs.first.reference.update({'status': decision});
       }
 
-      // Send message to contractor
       await FirebaseFirestore.instance.collection('messages').add({
         'jobId': jobId,
         'senderId': clientId,
@@ -534,6 +532,8 @@ class ContractorProfileViewWidget extends StatelessWidget {
                 Text('Availability: ${availability.join(', ')}'),
                 Text('Portfolio: ${portfolio.join(', ')}'),
                 const SizedBox(height: 20),
+
+                // Accept/Deny Buttons
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -547,7 +547,26 @@ class ContractorProfileViewWidget extends StatelessWidget {
                       child: const Text('Deny'),
                     ),
                   ],
-                )
+                ),
+
+                // Message Contractor Button
+                const SizedBox(height: 20),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.message),
+                  label: const Text('Message Contractor'),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => MessagesPage(
+                          jobId: jobId,
+                          currentUserId: clientId,
+                          otherUserId: contractorId,
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ],
             ),
           );

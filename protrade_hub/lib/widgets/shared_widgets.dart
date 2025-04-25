@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+
 /// ================= LOGOUT BUTTON =================
 class LogoutButton extends StatelessWidget {
   final VoidCallback onLogout;
@@ -128,6 +129,121 @@ class ViewJobsWidget extends StatelessWidget {
             },
           );
         },
+      ),
+    );
+  }
+}
+
+/// ================= MESSAGES PAGE =================
+
+class MessagesPage extends StatefulWidget {
+  final String jobId;
+  final String currentUserId;
+  final String otherUserId;
+
+  const MessagesPage({
+    super.key,
+    required this.jobId,
+    required this.currentUserId,
+    required this.otherUserId,
+  });
+
+  @override
+  State<MessagesPage> createState() => _MessagesPageState();
+}
+
+class _MessagesPageState extends State<MessagesPage> {
+  final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+
+  void _sendMessage() async {
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
+
+    await FirebaseFirestore.instance.collection('messages').add({
+      'jobId': widget.jobId,
+      'senderId': widget.currentUserId,
+      'receiverId': widget.otherUserId,
+      'text': text,
+      'timestamp': Timestamp.now(),
+    });
+
+    _messageController.clear();
+    _scrollToBottom();
+  }
+
+  void _scrollToBottom() {
+    Future.delayed(const Duration(milliseconds: 100), () {
+      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Messages')),
+      body: Column(
+        children: [
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('messages')
+                  .where('jobId', isEqualTo: widget.jobId)
+                  .orderBy('timestamp')
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                final messages = snapshot.data!.docs;
+
+                return ListView.builder(
+                  controller: _scrollController,
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    var msg = messages[index].data() as Map<String, dynamic>;
+                    bool isMe = msg['senderId'] == widget.currentUserId;
+                    return Align(
+                      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: isMe ? Colors.blueAccent : Colors.grey[300],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          msg['text'],
+                          style: TextStyle(color: isMe ? Colors.white : Colors.black),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          const Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _messageController,
+                    decoration: const InputDecoration(
+                      hintText: 'Type a message...',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: _sendMessage,
+                  child: const Icon(Icons.send),
+                )
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

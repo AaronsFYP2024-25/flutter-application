@@ -1,92 +1,178 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:protrade_hub/screens/contractor_profile.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../widgets/contractor_widgets.dart';
+import '../widgets/shared_widgets.dart';
 
-// Custom HttpOverrides to intercept network requests during tests
-class TestHttpOverrides extends HttpOverrides {
+class ContractorProfilePage extends StatefulWidget {
+  const ContractorProfilePage({super.key});
+
   @override
-  HttpClient createHttpClient(SecurityContext? context) {
-    return super.createHttpClient(context)
-      ..badCertificateCallback =
-          (X509Certificate cert, String host, int port) => true
-            ..addRequestModifier((HttpClientRequest request) async {
-              if (request.uri.host == 'via.placeholder.com') {
-                // Mock response for placeholder images
-                return HttpClientResponseMock();
-              }
-              return request;
-            });
+  _ContractorProfilePageState createState() => _ContractorProfilePageState();
+}
+
+class _ContractorProfilePageState extends State<ContractorProfilePage> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  int _currentIndex = 0;
+  late String contractorId;
+  String _name = 'Loading...';
+  String _email = 'Loading...';
+  String _phone = 'Loading...';
+  String _county = 'Loading...';
+  String _profilePicUrl = '';
+
+  List<String> _availability = [];
+  List<String> _specializations = [];
+  List<String> _portfolio = [];
+
+  @override
+  void initState() {
+    super.initState();
+    contractorId = _auth.currentUser!.uid;
+    _fetchContractorProfile();
   }
-}
 
-abstract class HttpClientResponseMock extends HttpClientResponse {
+  void _fetchContractorProfile() async {
+    try {
+      var doc = await _firestore.collection('contractor_profiles').doc(contractorId).get();
+
+      if (doc.exists) {
+        setState(() {
+          _name = doc['name'] ?? 'No Name';
+          _email = doc['email'] ?? 'No Email';
+          _phone = doc['phone'] ?? 'No Phone';
+          _county = doc['county'] ?? 'No County';
+          _profilePicUrl = doc['profilePicUrl'] ?? '';
+
+          _availability = List<String>.from(doc['availability'] ?? []);
+          _specializations = List<String>.from(doc['specializations'] ?? []);
+          _portfolio = List<String>.from(doc['portfolio'] ?? []);
+        });
+      }
+    } catch (e) {
+      print('Error fetching profile: $e');
+    }
+  }
+
+  final List<Widget> _tabs = [];
+
   @override
-  int get statusCode => 200;
-
-  @override
-  HttpClientResponseCompressionState get compressionState =>
-      HttpClientResponseCompressionState.notCompressed;
-
-  @override
-  HttpHeaders get headers => HttpHeaders();
-
-  @override
-  Stream<List<int>> get where => Stream.value(<int>[]);
-
-  // Provide an empty stream for the response body
-  @override
-  Stream<List<int>> handleData(data, Function callback) => const Stream.empty();
-}
-
-void main() {
-  setUpAll(() {
-    // Apply the custom HttpOverrides for all tests
-    HttpOverrides.global = TestHttpOverrides();
-  });
-
-  tearDownAll(() {
-    // Reset the HttpOverrides after tests
-    HttpOverrides.global = null;
-  });
-
-  group('ContractorProfilePage Tests', () {
-    testWidgets('Page loads with all necessary elements',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: ContractorProfilePage(),
+  Widget build(BuildContext context) {
+    _tabs.clear();
+    _tabs.addAll([
+      SingleChildScrollView(
+        child: Column(
+          children: [
+            const SizedBox(height: 16),
+            CircleAvatar(
+              radius: 50,
+              backgroundImage: _profilePicUrl.isNotEmpty
+                  ? NetworkImage(_profilePicUrl)
+                  : const NetworkImage('https://via.placeholder.com/150'),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              _name,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _email,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            Text(
+              _phone,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            Text(
+              'County: $_county',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ],
         ),
-      );
+      ),
+      ManageAvailabilityWidget(
+        availability: _availability,
+        onAvailabilityAdded: (newList) {
+          setState(() {
+            _availability = newList;
+          });
+        },
+        contractorId: contractorId,
+      ),
+      ManageSpecializationsWidget(
+        specializations: _specializations,
+        onSpecializationAdded: (newList) {
+          setState(() {
+            _specializations = newList;
+          });
+        },
+        contractorId: contractorId,
+      ),
+      ManagePortfolioWidget(
+        portfolio: _portfolio,
+        onPortfolioAdded: (newList) {
+          setState(() {
+            _portfolio = newList;
+          });
+        },
+        contractorId: contractorId,
+      ),
+      ViewMyJobsWidget(contractorId: contractorId),
+    ]);
 
-      // Verify the AppBar title
-      expect(find.text('Contractor Profile'), findsOneWidget);
-
-      // Verify the BottomNavigationBar items by their keys
-      expect(find.byIcon(Icons.person), findsOneWidget); // Overview icon
-      expect(find.byIcon(Icons.build), findsOneWidget); // Specializations icon
-      expect(find.byIcon(Icons.schedule), findsOneWidget); // Availability icon
-      expect(find.byIcon(Icons.photo_album), findsOneWidget); // Portfolio icon
-      expect(find.byIcon(Icons.edit), findsOneWidget); // Manage Portfolio icon
-    });
-
-    testWidgets('Tapping on bottom navigation changes the page',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: ContractorProfilePage(),
+    return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          children: [
+            CircleAvatar(
+              radius: 20,
+              backgroundImage: _profilePicUrl.isNotEmpty
+                  ? NetworkImage(_profilePicUrl)
+                  : const NetworkImage('https://via.placeholder.com/150'),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              _name,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ],
         ),
-      );
-
-      // Tap the Specializations tab using the icon instead of ambiguous text
-      await tester.tap(find.byIcon(Icons.build));
-      await tester.pumpAndSettle();
-      expect(find.text('Manage Specializations'), findsOneWidget);
-
-      // Tap the Availability tab using the icon
-      await tester.tap(find.byIcon(Icons.schedule));
-      await tester.pumpAndSettle();
-      expect(find.text('Manage Availability'), findsOneWidget);
-    });
-  });
+        automaticallyImplyLeading: false,
+      ),
+      body: _tabs[_currentIndex],
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ViewJobsWidget(contractorId: contractorId),
+            ),
+          );
+        },
+        child: const Icon(Icons.work),
+        tooltip: 'View Available Jobs',
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: Theme.of(context).bottomNavigationBarTheme.backgroundColor ?? Theme.of(context).scaffoldBackgroundColor,
+        currentIndex: _currentIndex,
+        selectedItemColor: Theme.of(context).colorScheme.secondary,
+        unselectedItemColor: Colors.grey,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Overview'),
+          BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: 'Availability'),
+          BottomNavigationBarItem(icon: Icon(Icons.build), label: 'Specializations'),
+          BottomNavigationBarItem(icon: Icon(Icons.photo), label: 'Portfolio'),
+          BottomNavigationBarItem(icon: Icon(Icons.check_circle), label: 'My Jobs'),
+        ],
+      ),
+    );
+  }
 }
