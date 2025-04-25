@@ -5,6 +5,8 @@ import 'package:file_picker/file_picker.dart';
 import '../widgets/shared_widgets.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
+import '../widgets/shared_widgets.dart';
+
 /// ================= CONTRACTOR PROFILE OVERVIEW =================
 class ContractorProfileOverview extends StatelessWidget {
   final String name;
@@ -420,16 +422,44 @@ class ViewMyJobsWidget extends StatelessWidget {
                     return const ListTile(title: Text('Loading job info...'));
                   }
                   var jobData = jobSnapshot.data!.data() as Map<String, dynamic>;
+                  String clientId = jobData['clientId'];
+
                   return Card(
-                    child: ListTile(
-                      title: Text(jobData['title'] ?? 'No Title'),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('County: ${jobData['county'] ?? 'Unknown'}'),
-                          Text('Status: ${application['status']}'),
-                        ],
-                      ),
+                    margin: const EdgeInsets.all(8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ListTile(
+                          title: Text(jobData['title'] ?? 'No Title'),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('County: ${jobData['county'] ?? 'Unknown'}'),
+                              Text('Status: ${application['status']}'),
+                            ],
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.message),
+                            label: const Text('Message Client'),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => MessagesPage(
+                                    jobId: jobId,
+                                    currentUserId: contractorId,
+                                    otherUserId: clientId,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
                     ),
                   );
                 },
@@ -441,7 +471,6 @@ class ViewMyJobsWidget extends StatelessWidget {
     );
   }
 }
-
 /// ================= DISPLAY SPECIALIZATIONS WIDGET =================
 class DisplaySpecializationsWidget extends StatelessWidget {
   final List<String> specializations;
