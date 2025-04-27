@@ -62,6 +62,7 @@ ProTrade is a cross-platform job management application designed to connect clie
 ## Demo Video
 
 Follow link to watch a demo video
+https://youtu.be/p7DTDVCwO3k
 
 ## License
 
